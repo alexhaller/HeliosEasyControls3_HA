@@ -10,7 +10,6 @@ import voluptuous as vol
 
 from homeassistant import config_entries, exceptions
 from homeassistant.core import HomeAssistant
-from homeassistant.data_entry_flow import FlowResult
 
 from .const import DOMAIN
 from .EasyControls3Instance import EasyControls3Instance
@@ -40,15 +39,12 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
     return {"title": data["host"]}
 
 
-class ConfigFlow(config_entries.ConfigFlow):
+class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Config flow for EasyControls3."""
 
     VERSION = 1
-    domain = DOMAIN
 
-    async def async_step_user(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> dict[str, Any]:
         """Handle the initial step."""
         errors: dict[str, str] = {}
         if user_input is not None:
