@@ -1,7 +1,7 @@
 """Test component setup."""
 from homeassistant.setup import async_setup_component
 
-from custom_components.helios_easyControls_3.0_homeassistant.const import DOMAIN
+from custom_components.EasyControls3_homeassistant.const import DOMAIN
 
 
 async def test_async_setup(hass):

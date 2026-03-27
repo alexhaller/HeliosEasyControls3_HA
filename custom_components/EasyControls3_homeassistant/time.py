@@ -27,7 +27,6 @@ class IntensiveDuration(TimeEntity):
         # The name of the entity
         self._attr_name = f"{self._easyConnector.deviceModel} Intensive Mode Duration"
         self.native_value = self._easyConnector.IntensivDuration
-        fuu = 2
 
     async def async_set_value(self, value: time) -> None:
         """Update the current value."""

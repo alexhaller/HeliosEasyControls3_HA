@@ -11,7 +11,7 @@ import voluptuous as vol
 from homeassistant import config_entries, exceptions
 from homeassistant.core import HomeAssistant
 
-from .const import DOMAIN  # pylint:disable=unused-import
+from .const import DOMAIN
 from .EasyControls3Instance import EasyControls3Instance
 
 _LOGGER = logging.getLogger(__name__)
@@ -27,7 +27,7 @@ async def validate_input(hass: HomeAssistant, data: dict) -> dict[str, Any]:
     """
     # Validate the data can be used to set up a connection.
     try:
-        ipaddress.IPv4Network(data["host"])
+        ipaddress.IPv4Address(data["host"])
     except ValueError:
         raise InvalidHost
 

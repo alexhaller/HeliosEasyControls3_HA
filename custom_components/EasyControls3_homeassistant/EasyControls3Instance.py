@@ -65,13 +65,15 @@ class EasyControls3Instance:
                 self._isAvailable = True
                 self._lastUpdate = datetime.datetime.now()
                 self._sthModified = False
-            except Exception as exception:
-                LOGGER.error(f"error in reading ({exception})")
+            except (asyncio.TimeoutError, ConnectionError, OSError) as exception:
+                LOGGER.error(f"error in reading device data ({exception})")
                 if datetime.datetime.now() - self._lastUpdate > self._offlineAfter:
                     self._isAvailable = False
 
     def _parseData(self, data):
-        # device info
+        # Binary protocol: KWL device responds with structured data at specific byte offsets
+
+        # Device identification (offsets 14-17)
         self._deviceModel = deviceInfo["device_model_data"][data[17 * 2 + 1]]
         self._deviceType = deviceInfo["device_type_data"][data[16 * 2 + 1]]
         self._SerialNR = (
@@ -81,15 +83,9 @@ class EasyControls3Instance:
             + data[15 * 2 + 1]
         )
 
-        # state
-        # current device state - we need A_CYC_STATE (Y), A_CYC_FIREPLACE_TIMER (u), A_CYC_BOOST_TIMER (v)
-        # offsets: 107, 111, 110
-        # the status is calculated:
-        # IF fireplace timer is 0 and boost timer is 0 and state is 0 => 0
-        # IF fireplace timer is not 0 => 3
-        # IF boost timer is not 0 => 2
-        # IF state is not 0 => 1
-        # eq: a = 0 == u ? 0 == v ? 0 == Y ? 0 : 1 : 2 : 3
+        # Operating mode state (offsets 107, 110, 111)
+        # state: A_CYC_STATE, boost: A_CYC_BOOST_TIMER, fire: A_CYC_FIREPLACE_TIMER
+        # Logic: fireplace (3) > intensive/boost (2) > away (1) > at_home (0)
         state = data[107 * 2 + 1]
         fire = data[111 * 2 + 1]
         boost = data[110 * 2 + 1]
@@ -99,23 +95,23 @@ class EasyControls3Instance:
         tmpState = KWLState.Individual if fire != 0 else tmpState
         self._instanceState = tmpState
 
-        # fan
+        # Fan speeds (offsets 129, 419, 407, 431)
         self._CurrentFanSpeed = data[129]
         self._intensivFanSpeed = data[431]
         self._atHomeFanSpeed = data[419]
         self._awayFanSpeed = data[407]
 
-        # temperatures
+        # Temperatures (offsets 65-69)
         self._OutsideTemperature = dataToCelsius(data, 67)
         self._SupplyTemperature = dataToCelsius(data, 69)
         self._IndoorTemperature = dataToCelsius(data, 65)
         self._ExhaustTemperature = dataToCelsius(data, 66)
 
-        # humidity
+        # Humidity (offset 74)
         self._AirRH = data[74 * 2 + 1]
 
-        # filter
-        self._filterInterval = data[239 * 2 + 1]  # a month at helios has 30 days
+        # Filter status (offsets 239, 248-250)
+        self._filterInterval = data[239 * 2 + 1]  # in 30-day months
         lastFilterChangedYear = 2000 + data[250 * 2 + 1]
         lastFilterChangedMonth = data[249 * 2 + 1]
         lastFilterChangedDay = data[248 * 2 + 1]
@@ -126,23 +122,22 @@ class EasyControls3Instance:
             days=+int(self._filterInterval)
         )
 
-        # duration
+        # Intensive mode duration in minutes (offset 493)
         intensivDurationInMinutes = data[493]
         intensivDurationHours = math.floor(intensivDurationInMinutes / 60)
         intensivDurationMinutes = intensivDurationInMinutes - 60 * intensivDurationHours
-
         self._intensivDuration = datetime.time(
             intensivDurationHours, intensivDurationMinutes
         )
 
-        # on off state
-        # value_if_true if condition else value_if_false
+        # Device power state (offset 217): 0=on, !=0=off
         self._isOn = bool(data[217] == 0)
 
-        # CO2 value
+        # CO2 sensor value (offsets 182-183)
         self._CO2Value = int(data[182]) << 8 | int(data[183])
 
     async def switchMode(self, wantedKWLState):
+        # Binary protocol commands for mode switching
         if wantedKWLState is KWLState.AtHome:
             requestData = "0800f9000112000004120000051200000b37"
         elif wantedKWLState is KWLState.Away:
@@ -160,15 +155,15 @@ class EasyControls3Instance:
         elif wantedKWLState is KWLState.Individual:
             requestData = "0600f90004120000051296009e25"
         else:
-            raise TypeError("direction must be an instance of Direction Enum")
+            raise TypeError("wantedKWLState must be an instance of KWLState Enum")
 
         request = bytes.fromhex(requestData)
         response = await self._exchangeData(request)
 
         if bytes.fromhex("0200f500f700") == response:
-            LOGGER.debug("expected response")
+            LOGGER.debug("mode switch: expected response received")
         else:
-            LOGGER.debug("unexpected response")
+            LOGGER.warning("mode switch: unexpected response from device")
 
         self._sthModified = True
 
@@ -240,9 +235,9 @@ class EasyControls3Instance:
         request = bytes.fromhex(requestData)
         response = await self._exchangeData(request)
         if bytes.fromhex("0200f500f700") == response:
-            LOGGER.debug("expected response")
+            LOGGER.debug("fan speed set: expected response received")
         else:
-            LOGGER.debug("unexpected response")
+            LOGGER.warning("fan speed set: unexpected response from device")
 
         self._sthModified = True
 
@@ -277,9 +272,9 @@ class EasyControls3Instance:
         request = bytes.fromhex(requestData)
         response = await self._exchangeData(request)
         if bytes.fromhex("0200f500f700") == response:
-            LOGGER.debug("expected response")
+            LOGGER.debug("duration set: expected response received")
         else:
-            LOGGER.debug("unexpected response")
+            LOGGER.warning("duration set: unexpected response from device")
 
         self._sthModified = True
 
@@ -299,9 +294,9 @@ class EasyControls3Instance:
         request = bytes.fromhex(requestData)
         response = await self._exchangeData(request)
         if bytes.fromhex("0200f500f700") == response:
-            LOGGER.debug("expected response")
+            LOGGER.debug("device power: expected response received")
         else:
-            LOGGER.debug("unexpected response")
+            LOGGER.warning("device power: unexpected response from device")
 
         self._sthModified = True
 
