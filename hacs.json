@@ -1,5 +1,5 @@
 {
-  "name": "easyControls 3.0 to homeassistant",
+  "name": "Helios easyControls 3.0 - Home Assistant",
   "render_readme": true,
   "iot_class": "local_polling"
 }
