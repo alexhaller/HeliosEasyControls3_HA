@@ -1,12 +1,7 @@
 # Helios easyControls 3.0 - Home Assistant (AlexH)
 
-## Installation
-Via HACS custom repo
-- The integration could be set up completely from UI. After the repo is under custom_components the integration should be found via EasyControls3_homeassistant (sorry for the name)
-- It only needs the ip address to find it
-
 ## Current state
-Communication is working via WebSocket, so the integration should work with EasyControls 3.x version devices (pleas see issues for a list of tested devices and firmwares).
+Communication is working via WebSocket, so the integration should work with EasyControls 3.x version devices.
 
 Supported Features:
 - Sensors for temperature values (indoor, outside, supply, exhaust)
@@ -20,6 +15,11 @@ Supported Features:
 - A switch Entity to turn the KWL ON/OFF
 
 The integration uses the serial number of the device to assign uniq ids to the sensors.
+
+## Installation
+Via HACS custom repo
+- The integration could be set up completely from UI. After the repo is under custom_components the integration should be found via EasyControls3_homeassistant (sorry for the name)
+- It only needs the ip address to find it
 
 ## Pictures
 ### Integration overview
