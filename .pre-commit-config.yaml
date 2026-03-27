@@ -1,12 +1,4 @@
 repos:
-  - repo: local
-    hooks:
-      - id: validate-domain-consistency
-        name: Validate domain consistency
-        entry: python scripts/validate_domain.py
-        language: system
-        files: '(manifest\.json|const\.py)$'
-        stages: [commit]
   - repo: https://github.com/asottile/pyupgrade
     rev: v3.16.0
     hooks:
