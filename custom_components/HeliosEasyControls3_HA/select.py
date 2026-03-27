@@ -9,7 +9,6 @@ from .const import DOMAIN
 from .KWLStates import KWLState
 
 SCAN_INTERVAL = timedelta(seconds=60)
-MIN_TIME_BETWEEN_SCANS = timedelta(seconds=30)
 
 
 async def async_setup_entry(

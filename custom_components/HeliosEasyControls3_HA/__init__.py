@@ -6,7 +6,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 
-from . import EasyControls3Instance
+from .EasyControls3Instance import EasyControls3Instance
 from .const import DOMAIN
 
 PLATFORMS = [Platform.NUMBER, Platform.SELECT, Platform.SENSOR, Platform.TIME, Platform.SWITCH]
@@ -14,7 +14,7 @@ PLATFORMS = [Platform.NUMBER, Platform.SELECT, Platform.SENSOR, Platform.TIME, P
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = (
-        EasyControls3Instance.EasyControls3Instance(entry.data["host"])
+        EasyControls3Instance(entry.data["host"])
     )
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
