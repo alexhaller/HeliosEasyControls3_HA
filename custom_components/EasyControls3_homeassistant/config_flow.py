@@ -1,4 +1,4 @@
-"""Config flow for Hello World integration."""
+"""Config flow for EasyControls3 integration."""
 
 from __future__ import annotations
 
@@ -39,13 +39,17 @@ async def validate_input(hass: HomeAssistant, data: dict) -> dict[str, Any]:
     return {"title": data["host"]}
 
 
-class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    VERSION = 1
-    CONNECTION_CLASS = config_entries.CONN_CLASS_LOCAL_POLL
+class ConfigFlow(config_entries.ConfigFlow):
+    """Config flow for EasyControls3."""
 
-    async def async_step_user(self, user_input=None):
+    VERSION = 1
+    domain = DOMAIN
+
+    async def async_step_user(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.FlowResult:
         """Handle the initial step."""
-        errors = {}
+        errors: dict[str, str] = {}
         if user_input is not None:
             try:
                 info = await validate_input(self.hass, user_input)
@@ -59,7 +63,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 _LOGGER.exception("Unexpected exception")
                 errors["base"] = "unknown"
 
-        # If there is no user input or there were errors, show the form again, including any errors that were found with the input.
         return self.async_show_form(
             step_id="user", data_schema=DATA_SCHEMA, errors=errors
         )
