@@ -1,4 +1,4 @@
-# Helios easyControls 3.0 - Home Assistant (AlexH)
+# Helios easyControls 3.0 - Home Assistant (alexhaller)
 
 ## Current state
 Communication is working via WebSocket, so the integration should work with EasyControls 3.x version devices.
