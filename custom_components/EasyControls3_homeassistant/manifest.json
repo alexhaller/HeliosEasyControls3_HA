@@ -3,7 +3,7 @@
   "config_flow": true,
   "dependencies": [],
   "documentation": "https://github.com/alexhaller/HeliosEasyControls3_HA",
-  "domain": "HeliosEasyControls3_HA",
+  "domain": "EasyControls3_homeassistant",
   "iot_class": "local_polling",
   "name": "Helios easyControls 3.0 - HA",
   "requirements": ["websockets>=13.1"],
