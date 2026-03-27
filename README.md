@@ -18,7 +18,7 @@ The integration uses the serial number of the device to assign uniq ids to the s
 
 ## Installation
 Via HACS custom repo
-- The integration could be set up completely from UI. After the repo is under custom_components the integration should be found via EasyControls3_homeassistant (sorry for the name)
+- The integration could be set up completely from UI. After the repo is under custom_components the integration should be found via HeliosEasyControls3_HA
 - It only needs the ip address to find it
 
 ## Pictures

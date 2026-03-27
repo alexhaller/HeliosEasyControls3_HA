@@ -4,10 +4,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from custom_components.EasyControls3_homeassistant.EasyControls3Instance import (
+from custom_components.HeliosEasyControls3_HA.EasyControls3Instance import (
     EasyControls3Instance,
 )
-from custom_components.EasyControls3_homeassistant.KWLStates import KWLState
+from custom_components.HeliosEasyControls3_HA.KWLStates import KWLState
 
 
 @pytest.fixture
