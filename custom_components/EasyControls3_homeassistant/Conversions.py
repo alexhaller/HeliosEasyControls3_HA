@@ -1,5 +1,6 @@
-def dataToCelsius(data, offsetPosition):
-    OutsideTemperature = data[offsetPosition * 2] * 256 + data[offsetPosition * 2 + 1]
-    OutsideTemperature = OutsideTemperature / 100 - 273.15
-    OutsideTemperature = round(OutsideTemperature, 1)
-    return OutsideTemperature
+def dataToCelsius(data: bytearray, offsetPosition: int) -> float:
+    """Convert raw data to Celsius temperature."""
+    temperature = data[offsetPosition * 2] * 256 + data[offsetPosition * 2 + 1]
+    temperature = temperature / 100 - 273.15
+    temperature = round(temperature, 1)
+    return temperature

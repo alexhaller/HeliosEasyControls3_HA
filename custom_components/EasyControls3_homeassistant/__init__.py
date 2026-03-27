@@ -1,4 +1,4 @@
-"""Config flow for Hello World integration."""
+"""EasyControls3 Home Assistant integration."""
 
 from __future__ import annotations
 
