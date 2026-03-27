@@ -1,1 +1,1 @@
-DOMAIN = "EasyControls3_homeassistant"
+DOMAIN = "HeliosEasyControls3_HA"
