@@ -6,7 +6,6 @@ import math
 from dateutil.relativedelta import relativedelta
 from websockets.asyncio.client import connect
 
-from .Conversions import dataToCelsius
 from .deviceList import deviceInfo
 from .KWLStates import KWLState
 
@@ -80,11 +79,14 @@ class EasyControls3Instance:
         self._atHomeFanSpeed = data[419]
         self._awayFanSpeed = data[407]
 
-        # Temperatures (offsets 65-69)
-        self._OutsideTemperature = dataToCelsius(data, 67)
-        self._SupplyTemperature = dataToCelsius(data, 69)
-        self._IndoorTemperature = dataToCelsius(data, 65)
-        self._ExhaustTemperature = dataToCelsius(data, 66)
+        # Temperatures (offsets 65-69): raw value / 100 - 273.15 gives Celsius
+        def to_celsius(offset):
+            return round((data[offset * 2] * 256 + data[offset * 2 + 1]) / 100 - 273.15, 1)
+
+        self._OutsideTemperature = to_celsius(67)
+        self._SupplyTemperature = to_celsius(69)
+        self._IndoorTemperature = to_celsius(65)
+        self._ExhaustTemperature = to_celsius(66)
 
         # Humidity (offset 74)
         self._AirRH = data[74 * 2 + 1]
@@ -215,15 +217,6 @@ class EasyControls3Instance:
             LOGGER.debug("fan speed set: expected response received")
         else:
             LOGGER.warning("fan speed set: unexpected response from device")
-
-    async def setIntensiveFanSpeed(self, requestedFanSpeed: int):
-        await self.setFanSpeed(requestedFanSpeed, KWLState.Intensive)
-
-    async def setAtHomeFanSpeed(self, requestedFanSpeed: int):
-        await self.setFanSpeed(requestedFanSpeed, KWLState.AtHome)
-
-    async def setAwayFanSpeed(self, requestedFanSpeed: int):
-        await self.setFanSpeed(requestedFanSpeed, KWLState.Away)
 
     async def setIntensiveDuration(self, requestedDurationTime: datetime.time):
         requestedDuration = (

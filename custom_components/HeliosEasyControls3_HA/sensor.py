@@ -25,11 +25,11 @@ async def async_setup_entry(
     coordinator: DataUpdateCoordinator = hass.data[DOMAIN][config_entry.entry_id]
 
     entities = [
+        TemperatureSensor(coordinator, "OutsideTemperature", "Outside Temperature", "OutsideTemperature"),
+        TemperatureSensor(coordinator, "SupplyTemperature", "Supply Temperature", "SupplyTemperature"),
+        TemperatureSensor(coordinator, "IndoorTemperature", "Indoor Temperature", "IndoorTemperature"),
+        TemperatureSensor(coordinator, "ExhaustTemperature", "Exhaust Temperature", "ExhaustTemperature"),
         HumiditySensor(coordinator),
-        OutsideTemperatureSensor(coordinator),
-        SupplyTemperatureSensor(coordinator),
-        IndoorTemperatureSensor(coordinator),
-        ExhaustTemperatureSensor(coordinator),
         CurrentFanSpeed(coordinator),
         FilterChanged(coordinator),
         FilterDue(coordinator),
@@ -39,6 +39,29 @@ async def async_setup_entry(
         entities.append(CO2Sensor(coordinator))
 
     async_add_entities(entities)
+
+
+class TemperatureSensor(EasyControls3BaseEntity, SensorEntity):
+    device_class = SensorDeviceClass.TEMPERATURE
+    native_unit_of_measurement = UnitOfTemperature.CELSIUS
+    state_class = SensorStateClass.MEASUREMENT
+    suggested_display_precision = 1
+
+    def __init__(
+        self,
+        coordinator: DataUpdateCoordinator,
+        unique_suffix: str,
+        name_suffix: str,
+        device_attr: str,
+    ) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{self._device.serialNR}_{unique_suffix}"
+        self._attr_name = f"{self._device.deviceModel} {name_suffix}"
+        self._device_attr = device_attr
+
+    @property
+    def native_value(self):
+        return getattr(self._device, self._device_attr)
 
 
 class HumiditySensor(EasyControls3BaseEntity, SensorEntity):
@@ -55,70 +78,6 @@ class HumiditySensor(EasyControls3BaseEntity, SensorEntity):
     @property
     def native_value(self):
         return self._device.AirRH
-
-
-class OutsideTemperatureSensor(EasyControls3BaseEntity, SensorEntity):
-    device_class = SensorDeviceClass.TEMPERATURE
-    native_unit_of_measurement = UnitOfTemperature.CELSIUS
-    state_class = SensorStateClass.MEASUREMENT
-    suggested_display_precision = 1
-
-    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
-        super().__init__(coordinator)
-        self._attr_unique_id = f"{self._device.serialNR}_OutsideTemperature"
-        self._attr_name = f"{self._device.deviceModel} Outside Temperature"
-
-    @property
-    def native_value(self):
-        return self._device.OutsideTemperature
-
-
-class SupplyTemperatureSensor(EasyControls3BaseEntity, SensorEntity):
-    device_class = SensorDeviceClass.TEMPERATURE
-    native_unit_of_measurement = UnitOfTemperature.CELSIUS
-    state_class = SensorStateClass.MEASUREMENT
-    suggested_display_precision = 1
-
-    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
-        super().__init__(coordinator)
-        self._attr_unique_id = f"{self._device.serialNR}_SupplyTemperature"
-        self._attr_name = f"{self._device.deviceModel} Supply Temperature"
-
-    @property
-    def native_value(self):
-        return self._device.SupplyTemperature
-
-
-class IndoorTemperatureSensor(EasyControls3BaseEntity, SensorEntity):
-    device_class = SensorDeviceClass.TEMPERATURE
-    native_unit_of_measurement = UnitOfTemperature.CELSIUS
-    state_class = SensorStateClass.MEASUREMENT
-    suggested_display_precision = 1
-
-    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
-        super().__init__(coordinator)
-        self._attr_unique_id = f"{self._device.serialNR}_IndoorTemperature"
-        self._attr_name = f"{self._device.deviceModel} Indoor Temperature"
-
-    @property
-    def native_value(self):
-        return self._device.IndoorTemperature
-
-
-class ExhaustTemperatureSensor(EasyControls3BaseEntity, SensorEntity):
-    device_class = SensorDeviceClass.TEMPERATURE
-    native_unit_of_measurement = UnitOfTemperature.CELSIUS
-    state_class = SensorStateClass.MEASUREMENT
-    suggested_display_precision = 1
-
-    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
-        super().__init__(coordinator)
-        self._attr_unique_id = f"{self._device.serialNR}_ExhaustTemperature"
-        self._attr_name = f"{self._device.deviceModel} Exhaust Temperature"
-
-    @property
-    def native_value(self):
-        return self._device.ExhaustTemperature
 
 
 class CO2Sensor(EasyControls3BaseEntity, SensorEntity):

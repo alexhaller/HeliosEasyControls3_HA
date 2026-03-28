@@ -18,68 +18,40 @@ async def async_setup_entry(
 
     async_add_entities(
         [
-            FanSpeedNumberAtHome(coordinator),
-            FanSpeedNumberAway(coordinator),
-            FanSpeedNumberIntensive(coordinator),
+            FanSpeedNumber(coordinator, "atHomeFanSpeed", "Fan Speed At Home", "AtHomeFanSpeed", KWLState.AtHome),
+            FanSpeedNumber(coordinator, "awayFanSpeed", "Fan Speed Away", "AwayFanSpeed", KWLState.Away),
+            FanSpeedNumber(coordinator, "intensivFanSpeed", "Fan Speed Intensive", "IntensivFanSpeed", KWLState.Intensive),
         ]
     )
 
 
 class FanSpeedNumber(EasyControls3BaseEntity, NumberEntity):
-    """Base fan speed number entity."""
-
     native_min_value = 1.0
     native_max_value = 100.0
     native_step = 1.0
 
-    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+    def __init__(
+        self,
+        coordinator: DataUpdateCoordinator,
+        unique_suffix: str,
+        name_suffix: str,
+        device_attr: str,
+        mode: KWLState,
+    ) -> None:
         super().__init__(coordinator)
+        self._attr_unique_id = f"{self._device.serialNR}_{unique_suffix}"
+        self._attr_name = f"{self._device.deviceModel} {name_suffix}"
+        self._device_attr = device_attr
+        self._mode = mode
 
     @property
     def icon(self) -> str:
         return "mdi:fan"
 
-
-class FanSpeedNumberAtHome(FanSpeedNumber):
-    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
-        super().__init__(coordinator)
-        self._attr_unique_id = f"{self._device.serialNR}_atHomeFanSpeed"
-        self._attr_name = f"{self._device.deviceModel} Fan Speed At Home"
-
     @property
     def native_value(self):
-        return self._device.AtHomeFanSpeed
+        return getattr(self._device, self._device_attr)
 
     async def async_set_native_value(self, value: float) -> None:
-        await self._device.setAtHomeFanSpeed(value)
-        await self.coordinator.async_request_refresh()
-
-
-class FanSpeedNumberAway(FanSpeedNumber):
-    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
-        super().__init__(coordinator)
-        self._attr_unique_id = f"{self._device.serialNR}_awayFanSpeed"
-        self._attr_name = f"{self._device.deviceModel} Fan Speed Away"
-
-    @property
-    def native_value(self):
-        return self._device.AwayFanSpeed
-
-    async def async_set_native_value(self, value: float) -> None:
-        await self._device.setAwayFanSpeed(value)
-        await self.coordinator.async_request_refresh()
-
-
-class FanSpeedNumberIntensive(FanSpeedNumber):
-    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
-        super().__init__(coordinator)
-        self._attr_unique_id = f"{self._device.serialNR}_intensivFanSpeed"
-        self._attr_name = f"{self._device.deviceModel} Fan Speed Intensive"
-
-    @property
-    def native_value(self):
-        return self._device.IntensivFanSpeed
-
-    async def async_set_native_value(self, value: float) -> None:
-        await self._device.setIntensiveFanSpeed(value)
+        await self._device.setFanSpeed(value, self._mode)
         await self.coordinator.async_request_refresh()
