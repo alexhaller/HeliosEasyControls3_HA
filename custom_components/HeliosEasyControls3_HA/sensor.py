@@ -33,6 +33,7 @@ async def async_setup_entry(
         CurrentFanSpeed(coordinator),
         FilterChanged(coordinator),
         FilterDue(coordinator),
+        HeatRecoveryEfficiency(coordinator),
     ]
 
     if coordinator.data.CO2Value != 0xFFFF:  # only add CO2 sensor if it is available
@@ -151,3 +152,28 @@ class FilterDue(EasyControls3BaseEntity, SensorEntity):
     @property
     def icon(self) -> str:
         return "mdi:calendar-alert-outline"
+
+
+class HeatRecoveryEfficiency(EasyControls3BaseEntity, SensorEntity):
+    native_unit_of_measurement = PERCENTAGE
+    state_class = SensorStateClass.MEASUREMENT
+    suggested_display_precision = 1
+
+    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{self._device.serialNR}_HeatRecoveryEfficiency"
+        self._attr_name = f"{self._device.deviceModel} Heat Recovery Efficiency"
+
+    @property
+    def native_value(self):
+        supply = self._device.SupplyTemperature
+        outside = self._device.OutsideTemperature
+        indoor = self._device.IndoorTemperature
+        denominator = indoor - outside
+        if denominator == 0:
+            return None
+        return round((supply - outside) / denominator * 100, 1)
+
+    @property
+    def icon(self) -> str:
+        return "mdi:heat-wave"
