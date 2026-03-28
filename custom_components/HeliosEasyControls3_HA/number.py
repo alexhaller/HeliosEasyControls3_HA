@@ -1,13 +1,12 @@
-from datetime import timedelta
-
-from homeassistant.components.number import NumberDeviceClass, NumberEntity
+from homeassistant.components.number import NumberEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
+from . import EasyControls3BaseEntity
 from .const import DOMAIN
-
-SCAN_INTERVAL = timedelta(seconds=60)
+from .KWLStates import KWLState
 
 
 async def async_setup_entry(
@@ -15,122 +14,72 @@ async def async_setup_entry(
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Setup number entities."""
-    easyConnector = hass.data[DOMAIN][config_entry.entry_id]
-
-    if easyConnector.serialNR is None:
-        await easyConnector.readCurrentData()
+    coordinator: DataUpdateCoordinator = hass.data[DOMAIN][config_entry.entry_id]
 
     async_add_entities(
         [
-            FanSpeedNumberAtHome(easyConnector),
-            FanSpeedNumberAway(easyConnector),
-            FanSpeedNumberIntensive(easyConnector),
+            FanSpeedNumberAtHome(coordinator),
+            FanSpeedNumberAway(coordinator),
+            FanSpeedNumberIntensive(coordinator),
         ]
     )
 
 
-class FanSpeedNumber(NumberEntity):
+class FanSpeedNumber(EasyControls3BaseEntity, NumberEntity):
     """Base fan speed number entity."""
 
-    device_class = NumberDeviceClass.POWER_FACTOR
+    native_min_value = 1.0
+    native_max_value = 100.0
     native_step = 1.0
 
-    def __init__(self, easyConnector: object) -> None:
-        """Initialize the number entity."""
-        self._easyConnector = easyConnector
+    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+        super().__init__(coordinator)
 
     @property
-    def device_info(self) -> dict:
-        """Return information to link this entity with the correct device."""
-        return {"identifiers": {(DOMAIN, self._easyConnector.serialNR)}}
-
-    @property
-    def available(self) -> bool:
-        """Return True if entity is available."""
-        return self._easyConnector.IsAvailable
-
-    @property
-    def name(self) -> str:
-        """Return the name of the entity."""
-        return "Set Speed for intensive Fan"
+    def icon(self) -> str:
+        return "mdi:fan"
 
 
 class FanSpeedNumberAtHome(FanSpeedNumber):
-    """Fan speed number entity for at-home mode."""
-
-    def __init__(self, easyConnector: object) -> None:
-        """Initialize the number entity."""
-        super().__init__(easyConnector)
-        self._attr_unique_id = f"{self._easyConnector.serialNR}_atHomeFanSpeed"
-        self._attr_name = (
-            f"{self._easyConnector.deviceModel} Fan Speed for at home mode"
-        )
-        self.native_value = self._easyConnector.AtHomeFanSpeed
+    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{self._device.serialNR}_atHomeFanSpeed"
+        self._attr_name = f"{self._device.deviceModel} Fan Speed At Home"
 
     @property
-    def name(self) -> str:
-        """Return the name of the entity."""
-        return "Set fan speed for at home mode"
+    def native_value(self):
+        return self._device.AtHomeFanSpeed
 
     async def async_set_native_value(self, value: float) -> None:
-        """Update the current value."""
-        self.native_value = value
-        await self._easyConnector.setAtHomeFanSpeed(value)
-
-    async def async_update(self) -> None:
-        """Update the fan speed value."""
-        await self._easyConnector.readCurrentData()
-        self.native_value = self._easyConnector.AtHomeFanSpeed
+        await self._device.setAtHomeFanSpeed(value)
+        await self.coordinator.async_request_refresh()
 
 
 class FanSpeedNumberAway(FanSpeedNumber):
-    """Fan speed number entity for away mode."""
-
-    def __init__(self, easyConnector: object) -> None:
-        """Initialize the number entity."""
-        super().__init__(easyConnector)
-        self._attr_unique_id = f"{self._easyConnector.serialNR}_awayFanSpeed"
-        self._attr_name = f"{self._easyConnector.deviceModel} Fan Speed for away mode"
-        self.native_value = self._easyConnector.AwayFanSpeed
+    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{self._device.serialNR}_awayFanSpeed"
+        self._attr_name = f"{self._device.deviceModel} Fan Speed Away"
 
     @property
-    def name(self) -> str:
-        """Return the name of the entity."""
-        return "Set fan speed for away mode"
+    def native_value(self):
+        return self._device.AwayFanSpeed
 
     async def async_set_native_value(self, value: float) -> None:
-        """Update the current value."""
-        self.native_value = value
-        await self._easyConnector.setAwayFanSpeed(value)
-
-    async def async_update(self) -> None:
-        """Update the fan speed value."""
-        await self._easyConnector.readCurrentData()
-        self.native_value = self._easyConnector.AwayFanSpeed
+        await self._device.setAwayFanSpeed(value)
+        await self.coordinator.async_request_refresh()
 
 
 class FanSpeedNumberIntensive(FanSpeedNumber):
-    """Fan speed number entity for intensive mode."""
-
-    def __init__(self, easyConnector: object) -> None:
-        """Initialize the number entity."""
-        super().__init__(easyConnector)
-        self._attr_unique_id = f"{self._easyConnector.serialNR}_intensivFanSpeed"
-        self._attr_name = f"{self._easyConnector.deviceModel} Fan Speed for intensive"
-        self.native_value = self._easyConnector.IntensivFanSpeed
+    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{self._device.serialNR}_intensivFanSpeed"
+        self._attr_name = f"{self._device.deviceModel} Fan Speed Intensive"
 
     @property
-    def name(self) -> str:
-        """Return the name of the entity."""
-        return "Set fan speed for intensive mode"
+    def native_value(self):
+        return self._device.IntensivFanSpeed
 
     async def async_set_native_value(self, value: float) -> None:
-        """Update the current value."""
-        self.native_value = value
-        await self._easyConnector.setIntensiveFanSpeed(value)
-
-    async def async_update(self) -> None:
-        """Update the fan speed value."""
-        await self._easyConnector.readCurrentData()
-        self.native_value = self._easyConnector.IntensivFanSpeed
+        await self._device.setIntensiveFanSpeed(value)
+        await self.coordinator.async_request_refresh()

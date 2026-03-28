@@ -1,5 +1,3 @@
-from datetime import timedelta
-
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
@@ -13,10 +11,10 @@ from homeassistant.const import (
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
+from . import EasyControls3BaseEntity
 from .const import DOMAIN
-
-SCAN_INTERVAL = timedelta(seconds=60)
 
 
 async def async_setup_entry(
@@ -24,305 +22,173 @@ async def async_setup_entry(
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Add sensors for passed config_entry in HA."""
-    easyConnector = hass.data[DOMAIN][config_entry.entry_id]
+    coordinator: DataUpdateCoordinator = hass.data[DOMAIN][config_entry.entry_id]
 
-    if easyConnector.serialNR is None:
-        await easyConnector.readCurrentData()
+    entities = [
+        HumiditySensor(coordinator),
+        OutsideTemperatureSensor(coordinator),
+        SupplyTemperatureSensor(coordinator),
+        IndoorTemperatureSensor(coordinator),
+        ExhaustTemperatureSensor(coordinator),
+        CurrentFanSpeed(coordinator),
+        FilterChanged(coordinator),
+        FilterDue(coordinator),
+    ]
 
-    new_devices = []
+    if coordinator.data.CO2Value != 0xFFFF:  # only add CO2 sensor if it is available
+        entities.append(CO2Sensor(coordinator))
 
-    new_devices.append(HumiditySensor(easyConnector))
-    new_devices.append(OutsideTemperatureSensor(easyConnector))
-    new_devices.append(SupplyTemperatureSensor(easyConnector))
-    new_devices.append(IndoorTemperatureSensor(easyConnector))
-    new_devices.append(ExhaustTemperatureSensor(easyConnector))
-    new_devices.append(CurrentFanSpeed(easyConnector))
-    new_devices.append(FilterChanged(easyConnector))
-    new_devices.append(FilterDue(easyConnector))
-
-    if easyConnector.CO2Value != 0xFFFF:  # only add CO2 sensor if it is available
-        new_devices.append(CO2Sensor(easyConnector))
-
-    if new_devices:
-        async_add_entities(new_devices)
+    async_add_entities(entities)
 
 
-class SensorBase(SensorEntity):
-    """Base representation of a Sensor."""
-
-    def __init__(self, easyConnector: object) -> None:
-        """Initialize the sensor."""
-        self._easyConnector = easyConnector
-
-    @property
-    def device_info(self) -> dict:
-        """Return information to link this entity with the correct device."""
-        return {"identifiers": {(DOMAIN, self._easyConnector.serialNR)}}
-
-    @property
-    def available(self) -> bool:
-        """Return True if entity is available."""
-        return self._easyConnector.IsAvailable
-
-
-class HumiditySensor(SensorBase):
-    """Humidity sensor representation."""
-
+class HumiditySensor(EasyControls3BaseEntity, SensorEntity):
     device_class = SensorDeviceClass.HUMIDITY
-
     native_unit_of_measurement = PERCENTAGE
-    unit_of_measurement = PERCENTAGE
     state_class = SensorStateClass.MEASUREMENT
     suggested_display_precision = 1
 
-    def __init__(self, easyConnector: object) -> None:
-        """Initialize the sensor."""
-        super().__init__(easyConnector)
-
-        self._attr_unique_id = f"{self._easyConnector.serialNR}_AirRH"
-        self._attr_name = f"{self._easyConnector.deviceModel} Air Relativ Humidity"
+    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{self._device.serialNR}_AirRH"
+        self._attr_name = f"{self._device.deviceModel} Air Relative Humidity"
 
     @property
-    def state(self) -> int | None:
-        """Return the state of the sensor."""
-        return self._easyConnector.AirRH
-
-    async def async_update(self) -> None:
-        """Update sensor value."""
-        await self._easyConnector.readCurrentData()
-        self.native_value = self._easyConnector.AirRH
+    def native_value(self):
+        return self._device.AirRH
 
 
-class OutsideTemperatureSensor(SensorBase):
-    """Outside temperature sensor representation."""
-
+class OutsideTemperatureSensor(EasyControls3BaseEntity, SensorEntity):
     device_class = SensorDeviceClass.TEMPERATURE
     native_unit_of_measurement = UnitOfTemperature.CELSIUS
-    unit_of_measurement = UnitOfTemperature.CELSIUS
     state_class = SensorStateClass.MEASUREMENT
     suggested_display_precision = 1
 
-    def __init__(self, easyConnector: object) -> None:
-        """Initialize the sensor."""
-        super().__init__(easyConnector)
-
-        self._attr_unique_id = f"{self._easyConnector.serialNR}_OutsideTemperature"
-        self._attr_name = f"{self._easyConnector.deviceModel} Outside Temperature"
+    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{self._device.serialNR}_OutsideTemperature"
+        self._attr_name = f"{self._device.deviceModel} Outside Temperature"
 
     @property
-    def state(self) -> float | None:
-        """Return the state of the sensor."""
-        return self._easyConnector.OutsideTemperature
-
-    async def async_update(self) -> None:
-        """Update sensor value."""
-        await self._easyConnector.readCurrentData()
-        self.native_value = self._easyConnector.OutsideTemperature
+    def native_value(self):
+        return self._device.OutsideTemperature
 
 
-class SupplyTemperatureSensor(SensorBase):
-    """Supply temperature sensor representation."""
-
+class SupplyTemperatureSensor(EasyControls3BaseEntity, SensorEntity):
     device_class = SensorDeviceClass.TEMPERATURE
     native_unit_of_measurement = UnitOfTemperature.CELSIUS
-    unit_of_measurement = UnitOfTemperature.CELSIUS
     state_class = SensorStateClass.MEASUREMENT
     suggested_display_precision = 1
 
-    def __init__(self, easyConnector: object) -> None:
-        """Initialize the sensor."""
-        super().__init__(easyConnector)
-
-        self._attr_unique_id = f"{self._easyConnector.serialNR}_SupplyTemperature"
-        self._attr_name = f"{self._easyConnector.deviceModel} Supply Temperature"
+    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{self._device.serialNR}_SupplyTemperature"
+        self._attr_name = f"{self._device.deviceModel} Supply Temperature"
 
     @property
-    def state(self) -> float | None:
-        """Return the state of the sensor."""
-        return self._easyConnector.SupplyTemperature
-
-    async def async_update(self) -> None:
-        """Update sensor value."""
-        await self._easyConnector.readCurrentData()
-        self.native_value = self._easyConnector.SupplyTemperature
+    def native_value(self):
+        return self._device.SupplyTemperature
 
 
-class IndoorTemperatureSensor(SensorBase):
-    """Indoor temperature sensor representation."""
-
+class IndoorTemperatureSensor(EasyControls3BaseEntity, SensorEntity):
     device_class = SensorDeviceClass.TEMPERATURE
     native_unit_of_measurement = UnitOfTemperature.CELSIUS
-    unit_of_measurement = UnitOfTemperature.CELSIUS
     state_class = SensorStateClass.MEASUREMENT
     suggested_display_precision = 1
 
-    def __init__(self, easyConnector: object) -> None:
-        """Initialize the sensor."""
-        super().__init__(easyConnector)
-
-        self._attr_unique_id = f"{self._easyConnector.serialNR}_IndoorTemperature"
-        self._attr_name = f"{self._easyConnector.deviceModel} Indoor Temperature"
+    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{self._device.serialNR}_IndoorTemperature"
+        self._attr_name = f"{self._device.deviceModel} Indoor Temperature"
 
     @property
-    def state(self) -> float | None:
-        """Return the state of the sensor."""
-        return self._easyConnector.IndoorTemperature
-
-    async def async_update(self) -> None:
-        """Update sensor value."""
-        await self._easyConnector.readCurrentData()
-        self.native_value = self._easyConnector.IndoorTemperature
+    def native_value(self):
+        return self._device.IndoorTemperature
 
 
-class ExhaustTemperatureSensor(SensorBase):
-    """Exhaust temperature sensor representation."""
-
+class ExhaustTemperatureSensor(EasyControls3BaseEntity, SensorEntity):
     device_class = SensorDeviceClass.TEMPERATURE
     native_unit_of_measurement = UnitOfTemperature.CELSIUS
-    unit_of_measurement = UnitOfTemperature.CELSIUS
     state_class = SensorStateClass.MEASUREMENT
     suggested_display_precision = 1
 
-    def __init__(self, easyConnector: object) -> None:
-        """Initialize the sensor."""
-        super().__init__(easyConnector)
-        self._attr_unique_id = f"{self._easyConnector.serialNR}_ExhaustTemperature"
-        self._attr_name = f"{self._easyConnector.deviceModel} Exhaust Temperature"
+    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{self._device.serialNR}_ExhaustTemperature"
+        self._attr_name = f"{self._device.deviceModel} Exhaust Temperature"
 
     @property
-    def state(self) -> float | None:
-        """Return the state of the sensor."""
-        return self._easyConnector.ExhaustTemperature
-
-    async def async_update(self) -> None:
-        """Update sensor value."""
-        await self._easyConnector.readCurrentData()
-        self.native_value = self._easyConnector.ExhaustTemperature
+    def native_value(self):
+        return self._device.ExhaustTemperature
 
 
-class CO2Sensor(SensorBase):
-    """CO2 sensor representation."""
-
+class CO2Sensor(EasyControls3BaseEntity, SensorEntity):
     device_class = SensorDeviceClass.CO2
     native_unit_of_measurement = CONCENTRATION_PARTS_PER_MILLION
-    unit_of_measurement = CONCENTRATION_PARTS_PER_MILLION
     state_class = SensorStateClass.MEASUREMENT
-    suggested_display_precision = 1
+    suggested_display_precision = 0
 
-    def __init__(self, easyConnector: object) -> None:
-        """Initialize the sensor."""
-        super().__init__(easyConnector)
-        self._attr_unique_id = f"{self._easyConnector.serialNR}_CO2Value"
-        self._attr_name = f"{self._easyConnector.deviceModel} CO2 Value"
+    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{self._device.serialNR}_CO2Value"
+        self._attr_name = f"{self._device.deviceModel} CO2 Value"
 
     @property
-    def state(self) -> int:
-        """Return the state of the sensor."""
-        if self._easyConnector.CO2Value == 0xFFFF:
-            return 0
-        return self._easyConnector.CO2Value
-
-    async def async_update(self) -> None:
-        """Update sensor value."""
-        await self._easyConnector.readCurrentData()
-        if self._easyConnector.CO2Value == 0xFFFF:
-            self.native_value = 0
-        else:
-            self.native_value = self._easyConnector.CO2Value
+    def native_value(self):
+        return self._device.CO2Value
 
     @property
     def available(self) -> bool:
-        """Return True if sensor is available."""
-        return (
-            self._easyConnector.IsAvailable and self._easyConnector.CO2Value != 0xFFFF
-        )
+        return super().available and self._device.CO2Value != 0xFFFF
 
 
-class CurrentFanSpeed(SensorBase):
-    """Current fan speed sensor representation."""
-
-    device_class = SensorDeviceClass.POWER_FACTOR
-
+class CurrentFanSpeed(EasyControls3BaseEntity, SensorEntity):
     native_unit_of_measurement = PERCENTAGE
-    unit_of_measurement = PERCENTAGE
     state_class = SensorStateClass.MEASUREMENT
-    suggested_display_precision = 1
+    suggested_display_precision = 0
 
-    def __init__(self, easyConnector: object) -> None:
-        """Initialize the sensor."""
-        super().__init__(easyConnector)
-
-        self._attr_unique_id = f"{self._easyConnector.serialNR}_CurrentFanSpeed"
-        self._attr_name = f"{self._easyConnector.deviceModel} current Fan Speed"
+    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{self._device.serialNR}_CurrentFanSpeed"
+        self._attr_name = f"{self._device.deviceModel} Current Fan Speed"
 
     @property
-    def state(self) -> int | None:
-        """Return the state of the sensor."""
-        return self._easyConnector.CurrentFanSpeed
+    def native_value(self):
+        return self._device.CurrentFanSpeed
 
     @property
     def icon(self) -> str:
-        """Return icon for fan."""
         return "mdi:fan"
 
-    async def async_update(self) -> None:
-        """Update sensor value."""
-        await self._easyConnector.readCurrentData()
-        self.native_value = self._easyConnector.CurrentFanSpeed
 
-
-class FilterChanged(SensorBase):
-    """Last filter change date sensor representation."""
-
+class FilterChanged(EasyControls3BaseEntity, SensorEntity):
     device_class = SensorDeviceClass.DATE
 
-    def __init__(self, easyConnector: object) -> None:
-        """Initialize the sensor."""
-        super().__init__(easyConnector)
-
-        self._attr_unique_id = f"{self._easyConnector.serialNR}_filterChanged"
-        self._attr_name = f"{self._easyConnector.deviceModel} last filter change"
+    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{self._device.serialNR}_filterChanged"
+        self._attr_name = f"{self._device.deviceModel} Last Filter Change"
 
     @property
-    def state(self):
-        """Return the state of the sensor."""
-        return self._easyConnector.filterChanged
+    def native_value(self):
+        return self._device.filterChanged
 
     @property
     def icon(self) -> str:
-        """Return calendar icon."""
         return "mdi:calendar-sync-outline"
 
-    async def async_update(self) -> None:
-        """Update sensor value."""
-        await self._easyConnector.readCurrentData()
-        self.native_value = self._easyConnector.filterChanged
 
-
-class FilterDue(SensorBase):
-    """Next filter change date sensor representation."""
-
+class FilterDue(EasyControls3BaseEntity, SensorEntity):
     device_class = SensorDeviceClass.DATE
 
-    def __init__(self, easyConnector: object) -> None:
-        """Initialize the sensor."""
-        super().__init__(easyConnector)
-
-        self._attr_unique_id = f"{self._easyConnector.serialNR}_filterDue"
-        self._attr_name = f"{self._easyConnector.deviceModel} next filter change"
+    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{self._device.serialNR}_filterDue"
+        self._attr_name = f"{self._device.deviceModel} Next Filter Change"
 
     @property
-    def state(self):
-        """Return the state of the sensor."""
-        return self._easyConnector.filterDue
+    def native_value(self):
+        return self._device.filterDue
 
     @property
     def icon(self) -> str:
-        """Return calendar alert icon."""
         return "mdi:calendar-alert-outline"
-
-    async def async_update(self) -> None:
-        """Update sensor value."""
-        await self._easyConnector.readCurrentData()
-        self.native_value = self._easyConnector.filterDue

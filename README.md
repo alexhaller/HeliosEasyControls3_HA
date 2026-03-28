@@ -1,7 +1,7 @@
 # Helios easyControls 3.0 - Home Assistant (alexhaller)
 
-## Current state
-Communication is working via WebSocket, so the integration should work with EasyControls 3.x version devices.
+## Description
+HACS integration for Helios easyControls 3.0. Communication is working via WebSocket.
 
 Supported Features:
 - Sensors for temperature values (indoor, outside, supply, exhaust)
@@ -16,16 +16,8 @@ Supported Features:
 
 The integration uses the serial number of the device to assign uniq ids to the sensors.
 
-## Installation
-Via HACS custom repo
+## HACS Installation
+- Via HACS custom repo
 - The integration could be set up completely from UI. After the repo is under custom_components the integration should be found via HeliosEasyControls3_HA
 - It only needs the ip address to find it
-
-## Pictures
-### Integration overview
-![Integration overview](pictures/integrationentries.png)
-### Entities overview
-![entities overview](pictures/entities.png)
-### Possible UI
-![UI view](pictures/ui-view.png)
 

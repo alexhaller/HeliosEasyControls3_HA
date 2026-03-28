@@ -1,0 +1,21 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Helios easyControls 3.0",
+        "description": "Enter the IP address or hostname of your Helios KWL device.",
+        "data": {
+          "host": "Host (IP address or hostname)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Unable to connect to the device. Please check the host and try again.",
+      "invalid_host": "Invalid host. Please enter a valid IP address or hostname.",
+      "unknown": "Unexpected error. Please check the logs for more details."
+    },
+    "abort": {
+      "already_configured": "This device is already configured."
+    }
+  }
+}

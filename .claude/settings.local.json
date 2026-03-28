@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip install:*)",
+      "Read(//c/Users/alexa/AppData/Local/Programs/Python/Python312/Lib/site-packages/pytest_homeassistant_custom_component/**)",
+      "Bash(pytest --tb=short)"
+    ]
+  }
+}

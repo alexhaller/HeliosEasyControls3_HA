@@ -34,41 +34,20 @@ class EasyControls3Instance:
         self._filterInterval = None
         self._filterChanged = None
         self._filterDue = None
-        self._sthModified = False
-        self._lastUpdate = None
-        self._minSecondsBetweenRead = 60
-        self._isAvailable = True
-        self._offlineAfter = datetime.timedelta(minutes=10)
-        self._isOn = True
         self._CO2Value = None
 
     async def _exchangeData(self, request):
         async with self._lock, connect(self._url) as websocket:
             LOGGER.debug("connected")
-            # request current data package
             await websocket.send(request)
             LOGGER.debug("sent")
             response = await websocket.recv()
             return response
 
     async def readCurrentData(self):
-        if (
-            self._lastUpdate is None
-            or (datetime.datetime.now() - self._lastUpdate).total_seconds()
-            > self._minSecondsBetweenRead
-            or self._sthModified
-        ):
-            try:
-                request = bytes.fromhex("0300f6000000f900")
-                response = await self._exchangeData(request)
-                self._parseData(response)
-                self._isAvailable = True
-                self._lastUpdate = datetime.datetime.now()
-                self._sthModified = False
-            except (asyncio.TimeoutError, ConnectionError, OSError) as exception:
-                LOGGER.error(f"error in reading device data ({exception})")
-                if datetime.datetime.now() - self._lastUpdate > self._offlineAfter:
-                    self._isAvailable = False
+        request = bytes.fromhex("0300f6000000f900")
+        response = await self._exchangeData(request)
+        self._parseData(response)
 
     def _parseData(self, data):
         # Binary protocol: KWL device responds with structured data at specific byte offsets
@@ -165,8 +144,6 @@ class EasyControls3Instance:
         else:
             LOGGER.warning("mode switch: unexpected response from device")
 
-        self._sthModified = True
-
     def checkFanSpeedLimit(self, requestedFanSpeed: int):
         if requestedFanSpeed < 1:
             requestedFanSpeed = 1
@@ -239,8 +216,6 @@ class EasyControls3Instance:
         else:
             LOGGER.warning("fan speed set: unexpected response from device")
 
-        self._sthModified = True
-
     async def setIntensiveFanSpeed(self, requestedFanSpeed: int):
         await self.setFanSpeed(requestedFanSpeed, KWLState.Intensive)
 
@@ -276,10 +251,7 @@ class EasyControls3Instance:
         else:
             LOGGER.warning("duration set: unexpected response from device")
 
-        self._sthModified = True
-
     async def test_connection(self) -> bool:
-        # """Test connectivity by doing a read."""
         request = bytes.fromhex("0300f6000000f900")
         response = await self._exchangeData(request)
         self._parseData(response)
@@ -297,8 +269,6 @@ class EasyControls3Instance:
             LOGGER.debug("device power: expected response received")
         else:
             LOGGER.warning("device power: unexpected response from device")
-
-        self._sthModified = True
 
     @property
     def url(self):
@@ -371,14 +341,6 @@ class EasyControls3Instance:
     @property
     def filterDue(self):
         return self._filterDue
-
-    @property
-    def sthModified(self):
-        return self._sthModified
-
-    @property
-    def IsAvailable(self):
-        return self._isAvailable
 
     @property
     def IsOn(self):
