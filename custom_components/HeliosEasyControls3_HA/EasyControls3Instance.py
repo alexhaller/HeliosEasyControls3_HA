@@ -58,6 +58,20 @@ class EasyControls3Instance:
         self._rhSensors: list[int | None] = [None] * 6
         self._co2Sensors: list[int | None] = [None] * 6
         self._vocSensors: list[int | None] = [None] * 4
+        # Mode timer remaining (minutes)
+        self._boostTimerRemaining: int | None = None
+        self._fireplaceTimerRemaining: int | None = None
+        # Supply cell air temperature (heat exchanger cell)
+        self._supplyCellAirTemperature: float | None = None
+        # RH/CO2 control enable per mode
+        self._rhControlHome: bool | None = None
+        self._co2ControlHome: bool | None = None
+        self._rhControlAway: bool | None = None
+        self._co2ControlAway: bool | None = None
+        self._rhControlBoost: bool | None = None
+        self._co2ControlBoost: bool | None = None
+        # Filter reminder
+        self._filterReminderEnabled: bool | None = None
         # Extra and Fireplace mode fan speeds and durations
         self._extraTimerRemaining: int | None = None
         self._fireplaceExtractFanSpeed: int | None = None
@@ -141,6 +155,7 @@ class EasyControls3Instance:
         self._SupplyTemperature = to_celsius(69)
         self._IndoorTemperature = to_celsius(65)
         self._ExhaustTemperature = to_celsius(66)
+        self._supplyCellAirTemperature = to_celsius(68)  # A_CYC_TEMP_SUPPLY_CELL_AIR (4357)
 
         # Humidity (offset 74) — A_CYC_RH_VALUE (4363)
         self._AirRH = data[74 * 2 + 1]
@@ -174,6 +189,8 @@ class EasyControls3Instance:
 
         # Software state — g_cyclone_sw_state (buf_start=106, reg_start=4608)
         self._defrosting = bool(data[109 * 2 + 1])            # A_CYC_DEFROSTING (4611)
+        self._boostTimerRemaining = read_word(110)             # A_CYC_BOOST_TIMER (4612)
+        self._fireplaceTimerRemaining = read_word(111)         # A_CYC_FIREPLACE_TIMER (4613)
         self._extraTimerRemaining = data[112 * 2 + 1]         # A_CYC_EXTRA_TIMER (4614)
         self._weeklyTimerEnabled = bool(data[113 * 2 + 1])    # A_CYC_WEEKLY_TIMER_ENABLED (4615)
         cell_state_raw = data[114 * 2 + 1]                    # A_CYC_CELL_STATE (4616)
@@ -198,8 +215,15 @@ class EasyControls3Instance:
         self._extraModeDuration = datetime.time(extra_min // 60, extra_min % 60)
 
         self._fireplaceAirTempTarget = to_celsius(199)         # A_CYC_FIREPLACE_AIR_TEMP_TARGET (20497)
+        self._rhControlHome = bool(data[201 * 2 + 1])         # A_CYC_RH_CTRL_ENABLED_HOME (20499)
+        self._co2ControlHome = bool(data[202 * 2 + 1])        # A_CYC_CO2_CTRL_ENABLED_HOME (20500)
         self._awayAirTempTarget = to_celsius(204)              # A_CYC_AWAY_AIR_TEMP_TARGET (20502)
+        self._filterReminderEnabled = not bool(data[205 * 2 + 1])  # A_CYC_FILTER_REMINDER_DISABLED (20503), inverted
+        self._rhControlAway = bool(data[207 * 2 + 1])         # A_CYC_RH_CTRL_ENABLED_AWAY (20505)
+        self._co2ControlAway = bool(data[208 * 2 + 1])        # A_CYC_CO2_CTRL_ENABLED_AWAY (20506)
         self._homeAirTempTarget = to_celsius(210)              # A_CYC_HOME_AIR_TEMP_TARGET (20508)
+        self._rhControlBoost = bool(data[213 * 2 + 1])        # A_CYC_RH_CTRL_ENABLED_BOOST (20511)
+        self._co2ControlBoost = bool(data[214 * 2 + 1])       # A_CYC_CO2_CTRL_ENABLED_BOOST (20512)
         self._boostAirTempTarget = to_celsius(216)             # A_CYC_BOOST_AIR_TEMP_TARGET (20514)
 
         fp_min = data[247 * 2 + 1]                            # A_CYC_FIREPLACE_TIME (20545)
@@ -412,6 +436,35 @@ class EasyControls3Instance:
         else:
             LOGGER.warning("weekly timer set: unexpected response from device")
 
+    async def _setControlFlag(self, register: int, enabled: bool) -> None:
+        response = await self._exchangeData(self._build_write_command((register, int(enabled))))
+        if bytes.fromhex("0200f500f700") == response:
+            LOGGER.debug("control flag set: expected response received")
+        else:
+            LOGGER.warning("control flag set: unexpected response from device")
+
+    async def setRhControlHome(self, enabled: bool) -> None:
+        await self._setControlFlag(0x5013, enabled)  # A_CYC_RH_CTRL_ENABLED_HOME (20499)
+
+    async def setCo2ControlHome(self, enabled: bool) -> None:
+        await self._setControlFlag(0x5014, enabled)  # A_CYC_CO2_CTRL_ENABLED_HOME (20500)
+
+    async def setRhControlAway(self, enabled: bool) -> None:
+        await self._setControlFlag(0x5019, enabled)  # A_CYC_RH_CTRL_ENABLED_AWAY (20505)
+
+    async def setCo2ControlAway(self, enabled: bool) -> None:
+        await self._setControlFlag(0x501A, enabled)  # A_CYC_CO2_CTRL_ENABLED_AWAY (20506)
+
+    async def setRhControlBoost(self, enabled: bool) -> None:
+        await self._setControlFlag(0x501F, enabled)  # A_CYC_RH_CTRL_ENABLED_BOOST (20511)
+
+    async def setCo2ControlBoost(self, enabled: bool) -> None:
+        await self._setControlFlag(0x5020, enabled)  # A_CYC_CO2_CTRL_ENABLED_BOOST (20512)
+
+    async def setFilterReminderEnabled(self, enabled: bool) -> None:
+        # Register is DISABLED flag — invert
+        await self._setControlFlag(0x5017, not enabled)  # A_CYC_FILTER_REMINDER_DISABLED (20503)
+
     async def test_connection(self) -> bool:
         try:
             request = bytes.fromhex("0300f6000000f900")
@@ -601,6 +654,46 @@ class EasyControls3Instance:
     @property
     def FireplaceModeDuration(self) -> datetime.time | None:
         return self._fireplaceModeDuration
+
+    @property
+    def BoostTimerRemaining(self) -> int | None:
+        return self._boostTimerRemaining
+
+    @property
+    def FireplaceTimerRemaining(self) -> int | None:
+        return self._fireplaceTimerRemaining
+
+    @property
+    def SupplyCellAirTemperature(self) -> float | None:
+        return self._supplyCellAirTemperature
+
+    @property
+    def RhControlHome(self) -> bool | None:
+        return self._rhControlHome
+
+    @property
+    def Co2ControlHome(self) -> bool | None:
+        return self._co2ControlHome
+
+    @property
+    def RhControlAway(self) -> bool | None:
+        return self._rhControlAway
+
+    @property
+    def Co2ControlAway(self) -> bool | None:
+        return self._co2ControlAway
+
+    @property
+    def RhControlBoost(self) -> bool | None:
+        return self._rhControlBoost
+
+    @property
+    def Co2ControlBoost(self) -> bool | None:
+        return self._co2ControlBoost
+
+    @property
+    def FilterReminderEnabled(self) -> bool | None:
+        return self._filterReminderEnabled
 
     def rhSensor(self, index: int) -> int | None:
         return self._rhSensors[index]

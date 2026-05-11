@@ -47,6 +47,9 @@ async def async_setup_entry(
         CurrentUptimeHoursSensor(coordinator),
         HeatRecoveryEfficiency(coordinator),
         ExtraTimerRemainingSensor(coordinator),
+        BoostTimerRemainingSensor(coordinator),
+        FireplaceTimerRemainingSensor(coordinator),
+        TemperatureSensor(coordinator, "SupplyCellAirTemperature", "Supply Cell Air Temperature", "SupplyCellAirTemperature"),
     ]
 
     for i in range(6):
@@ -362,6 +365,46 @@ class ExtraTimerRemainingSensor(EasyControls3BaseEntity, SensorEntity):
     @property
     def native_value(self):
         return self._device.ExtraTimerRemaining
+
+    @property
+    def icon(self) -> str:
+        return "mdi:timer-outline"
+
+
+class BoostTimerRemainingSensor(EasyControls3BaseEntity, SensorEntity):
+    device_class = SensorDeviceClass.DURATION
+    native_unit_of_measurement = UnitOfTime.MINUTES
+    state_class = SensorStateClass.MEASUREMENT
+    suggested_display_precision = 0
+
+    def __init__(self, coordinator: EasyControls3Coordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{self._device.serialNR}_BoostTimerRemaining"
+        self._attr_name = f"{self._device.deviceModel} Intensive Mode Timer Remaining"
+
+    @property
+    def native_value(self):
+        return self._device.BoostTimerRemaining
+
+    @property
+    def icon(self) -> str:
+        return "mdi:timer-outline"
+
+
+class FireplaceTimerRemainingSensor(EasyControls3BaseEntity, SensorEntity):
+    device_class = SensorDeviceClass.DURATION
+    native_unit_of_measurement = UnitOfTime.MINUTES
+    state_class = SensorStateClass.MEASUREMENT
+    suggested_display_precision = 0
+
+    def __init__(self, coordinator: EasyControls3Coordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{self._device.serialNR}_FireplaceTimerRemaining"
+        self._attr_name = f"{self._device.deviceModel} Fireplace Mode Timer Remaining"
+
+    @property
+    def native_value(self):
+        return self._device.FireplaceTimerRemaining
 
     @property
     def icon(self) -> str:
