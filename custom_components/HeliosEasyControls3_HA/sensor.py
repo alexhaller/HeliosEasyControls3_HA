@@ -11,9 +11,8 @@ from homeassistant.const import (
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
-from . import EasyControls3BaseEntity
+from . import EasyControls3BaseEntity, EasyControls3Coordinator
 from .const import DOMAIN
 
 
@@ -22,7 +21,7 @@ async def async_setup_entry(
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    coordinator: DataUpdateCoordinator = hass.data[DOMAIN][config_entry.entry_id]
+    coordinator: EasyControls3Coordinator = hass.data[DOMAIN][config_entry.entry_id]
 
     entities = [
         TemperatureSensor(coordinator, "OutsideTemperature", "Outside Temperature", "OutsideTemperature"),
@@ -50,7 +49,7 @@ class TemperatureSensor(EasyControls3BaseEntity, SensorEntity):
 
     def __init__(
         self,
-        coordinator: DataUpdateCoordinator,
+        coordinator: EasyControls3Coordinator,
         unique_suffix: str,
         name_suffix: str,
         device_attr: str,
@@ -71,7 +70,7 @@ class HumiditySensor(EasyControls3BaseEntity, SensorEntity):
     state_class = SensorStateClass.MEASUREMENT
     suggested_display_precision = 1
 
-    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+    def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_AirRH"
         self._attr_name = f"{self._device.deviceModel} Air Relative Humidity"
@@ -87,7 +86,7 @@ class CO2Sensor(EasyControls3BaseEntity, SensorEntity):
     state_class = SensorStateClass.MEASUREMENT
     suggested_display_precision = 0
 
-    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+    def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_CO2Value"
         self._attr_name = f"{self._device.deviceModel} CO2 Value"
@@ -106,7 +105,7 @@ class CurrentFanSpeed(EasyControls3BaseEntity, SensorEntity):
     state_class = SensorStateClass.MEASUREMENT
     suggested_display_precision = 0
 
-    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+    def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_CurrentFanSpeed"
         self._attr_name = f"{self._device.deviceModel} Current Fan Speed"
@@ -123,7 +122,7 @@ class CurrentFanSpeed(EasyControls3BaseEntity, SensorEntity):
 class FilterChanged(EasyControls3BaseEntity, SensorEntity):
     device_class = SensorDeviceClass.DATE
 
-    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+    def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_filterChanged"
         self._attr_name = f"{self._device.deviceModel} Last Filter Change"
@@ -140,7 +139,7 @@ class FilterChanged(EasyControls3BaseEntity, SensorEntity):
 class FilterDue(EasyControls3BaseEntity, SensorEntity):
     device_class = SensorDeviceClass.DATE
 
-    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+    def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_filterDue"
         self._attr_name = f"{self._device.deviceModel} Next Filter Change"
@@ -159,7 +158,7 @@ class HeatRecoveryEfficiency(EasyControls3BaseEntity, SensorEntity):
     state_class = SensorStateClass.MEASUREMENT
     suggested_display_precision = 1
 
-    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+    def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_HeatRecoveryEfficiency"
         self._attr_name = f"{self._device.deviceModel} Heat Recovery Efficiency"

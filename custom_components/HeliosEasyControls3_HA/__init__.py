@@ -18,6 +18,8 @@ from homeassistant.helpers.update_coordinator import (
 from .const import DOMAIN
 from .EasyControls3Instance import EasyControls3Instance
 
+EasyControls3Coordinator = DataUpdateCoordinator[EasyControls3Instance]
+
 _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS = [Platform.NUMBER, Platform.SELECT, Platform.SENSOR, Platform.TIME, Platform.SWITCH]
@@ -59,17 +61,17 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return unload_ok
 
 
-class EasyControls3BaseEntity(CoordinatorEntity):
+class EasyControls3BaseEntity(CoordinatorEntity[EasyControls3Coordinator]):
     """Base entity for all EasyControls3 entities."""
 
-    def __init__(self, coordinator: DataUpdateCoordinator) -> None:
+    def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
         self._device: EasyControls3Instance = coordinator.data
 
     @property
     def device_info(self) -> DeviceInfo:
         return DeviceInfo(
-            identifiers={(DOMAIN, self._device.serialNR)},
+            identifiers={(DOMAIN, str(self._device.serialNR))},
             name=self._device.deviceModel,
             manufacturer="Helios",
             model=self._device.deviceType,

@@ -1,7 +1,7 @@
 import asyncio
 import datetime
 import logging
-import math
+from typing import cast
 
 from dateutil.relativedelta import relativedelta
 from websockets.asyncio.client import connect
@@ -15,40 +15,41 @@ LOGGER = logging.getLogger(__name__)
 class EasyControls3Instance:
     def __init__(self, url: str) -> None:
         self._lock = asyncio.Lock()
-        self._url = "ws://" + url + ":80"
-        self._deviceModel = None
-        self._deviceType = None
-        self._SerialNR = None
-        self._instanceState = None
-        self._CurrentFanSpeed = None
-        self._intensivFanSpeed = None
-        self._atHomeFanSpeed = None
-        self._awayFanSpeed = None
-        self._intensivDuration = None
-        self._OutsideTemperature = None
-        self._SupplyTemperature = None
-        self._IndoorTemperature = None
-        self._ExhaustTemperature = None
-        self._AirRH = None
-        self._filterInterval = None
-        self._filterChanged = None
-        self._filterDue = None
-        self._CO2Value = None
+        self._url: str = "ws://" + url + ":80"
+        self._deviceModel: str | None = None
+        self._deviceType: str | None = None
+        self._SerialNR: int | None = None
+        self._instanceState: KWLState | None = None
+        self._CurrentFanSpeed: int | None = None
+        self._intensivFanSpeed: int | None = None
+        self._atHomeFanSpeed: int | None = None
+        self._awayFanSpeed: int | None = None
+        self._intensivDuration: datetime.time | None = None
+        self._OutsideTemperature: float | None = None
+        self._SupplyTemperature: float | None = None
+        self._IndoorTemperature: float | None = None
+        self._ExhaustTemperature: float | None = None
+        self._AirRH: int | None = None
+        self._filterInterval: int | None = None
+        self._filterChanged: datetime.date | None = None
+        self._filterDue: datetime.date | None = None
+        self._CO2Value: int | None = None
+        self._isOn: bool | None = None
 
-    async def _exchangeData(self, request):
+    async def _exchangeData(self, request: bytes) -> bytes:
         async with self._lock, connect(self._url) as websocket:
             LOGGER.debug("connected")
             await websocket.send(request)
             LOGGER.debug("sent")
             response = await websocket.recv()
-            return response
+            return cast(bytes, response)
 
-    async def readCurrentData(self):
+    async def readCurrentData(self) -> None:
         request = bytes.fromhex("0300f6000000f900")
         response = await self._exchangeData(request)
         self._parseData(response)
 
-    def _parseData(self, data):
+    def _parseData(self, data: bytes) -> None:
         # Binary protocol: KWL device responds with structured data at specific byte offsets
 
         # Device identification (offsets 14-17)
@@ -80,7 +81,7 @@ class EasyControls3Instance:
         self._awayFanSpeed = data[407]
 
         # Temperatures (offsets 65-69): raw value / 100 - 273.15 gives Celsius
-        def to_celsius(offset):
+        def to_celsius(offset: int) -> float:
             return round((data[offset * 2] * 256 + data[offset * 2 + 1]) / 100 - 273.15, 1)
 
         self._OutsideTemperature = to_celsius(67)
@@ -100,12 +101,12 @@ class EasyControls3Instance:
             lastFilterChangedYear, lastFilterChangedMonth, lastFilterChangedDay
         )
         self._filterDue = self._filterChanged + relativedelta(
-            days=+int(self._filterInterval)
+            months=int(self._filterInterval)
         )
 
         # Intensive mode duration in minutes (offset 493)
         intensivDurationInMinutes = data[493]
-        intensivDurationHours = math.floor(intensivDurationInMinutes / 60)
+        intensivDurationHours = intensivDurationInMinutes // 60
         intensivDurationMinutes = intensivDurationInMinutes - 60 * intensivDurationHours
         self._intensivDuration = datetime.time(
             intensivDurationHours, intensivDurationMinutes
@@ -117,16 +118,16 @@ class EasyControls3Instance:
         # CO2 sensor value (offsets 182-183)
         self._CO2Value = int(data[182]) << 8 | int(data[183])
 
-    async def switchMode(self, wantedKWLState):
+    async def switchMode(self, wantedKWLState: KWLState) -> None:
         # Binary protocol commands for mode switching
         if wantedKWLState is KWLState.AtHome:
             requestData = "0800f9000112000004120000051200000b37"
         elif wantedKWLState is KWLState.Away:
             requestData = "0800f9000112010004120000051200000c37"
         elif wantedKWLState is KWLState.Intensive:
-            requestedDuration = (
-                self.IntensivDuration.hour * 60 + self.IntensivDuration.minute
-            )
+            duration = self._intensivDuration
+            assert duration is not None
+            requestedDuration = duration.hour * 60 + duration.minute
             requestData = (
                 "0600f9000412"
                 + (requestedDuration).to_bytes(2, byteorder="little").hex()
@@ -146,7 +147,7 @@ class EasyControls3Instance:
         else:
             LOGGER.warning("mode switch: unexpected response from device")
 
-    def checkFanSpeedLimit(self, requestedFanSpeed: int):
+    def checkFanSpeedLimit(self, requestedFanSpeed: int) -> int:
         if requestedFanSpeed < 1:
             requestedFanSpeed = 1
         elif requestedFanSpeed > 100:
@@ -155,14 +156,10 @@ class EasyControls3Instance:
             requestedFanSpeed = round(requestedFanSpeed)
         return requestedFanSpeed
 
-    def createFanSpeedPlainRequestString(self, requestedFanSpeed: int):
-        return (
-            f"{requestedFanSpeed:x}"
-            if len(f"{requestedFanSpeed:x}") == 2
-            else ("0" + f"{requestedFanSpeed:x}")
-        )  # needs to be 1byte, 2 nibble long
+    def createFanSpeedPlainRequestString(self, requestedFanSpeed: int) -> str:
+        return f"{requestedFanSpeed:02x}"
 
-    def createFanSpeedModdedRequestString(self, requestedFanSpeed: int, mode: KWLState):
+    def createFanSpeedModdedRequestString(self, requestedFanSpeed: int, mode: KWLState) -> str:
         offset = 30  # Intensive
 
         if mode is KWLState.AtHome:
@@ -174,13 +171,9 @@ class EasyControls3Instance:
         else:  # Individual/Fireplace should not be changed from here
             LOGGER.debug("Individual/Fireplace is not supported")
 
-        return (
-            f"{requestedFanSpeed + offset :x}"
-            if len(f"{requestedFanSpeed + offset :x}") == 2
-            else ("0" + f"{requestedFanSpeed + offset :x}")
-        )  # needs to be 1byte, 2 nibble long
+        return f"{requestedFanSpeed + offset:02x}"
 
-    async def setFanSpeed(self, requestedFanSpeed: int, mode: KWLState):
+    async def setFanSpeed(self, requestedFanSpeed: int, mode: KWLState) -> None:
         requestedFanSpeed = self.checkFanSpeedLimit(requestedFanSpeed)
         requestedSpeedPlainString = self.createFanSpeedPlainRequestString(
             requestedFanSpeed
@@ -218,7 +211,7 @@ class EasyControls3Instance:
         else:
             LOGGER.warning("fan speed set: unexpected response from device")
 
-    async def setIntensiveDuration(self, requestedDurationTime: datetime.time):
+    async def setIntensiveDuration(self, requestedDurationTime: datetime.time) -> None:
         requestedDuration = (
             requestedDurationTime.hour * 60 + requestedDurationTime.minute
         )
@@ -245,12 +238,15 @@ class EasyControls3Instance:
             LOGGER.warning("duration set: unexpected response from device")
 
     async def test_connection(self) -> bool:
-        request = bytes.fromhex("0300f6000000f900")
-        response = await self._exchangeData(request)
-        self._parseData(response)
-        return bool(response is not None)
+        try:
+            request = bytes.fromhex("0300f6000000f900")
+            response = await self._exchangeData(request)
+            self._parseData(response)
+            return True
+        except Exception:
+            return False
 
-    async def turnOffOn(self, requestTurnOff: bool):
+    async def turnOffOn(self, requestTurnOff: bool) -> None:
         if requestTurnOff is True:
             requestData = "0400f900021205000413"
         else:
@@ -264,81 +260,81 @@ class EasyControls3Instance:
             LOGGER.warning("device power: unexpected response from device")
 
     @property
-    def url(self):
+    def url(self) -> str:
         return self._url
 
     @property
-    def deviceModel(self):
+    def deviceModel(self) -> str | None:
         return self._deviceModel
 
     @property
-    def deviceType(self):
+    def deviceType(self) -> str | None:
         return self._deviceType
 
     @property
-    def serialNR(self):
+    def serialNR(self) -> int | None:
         return self._SerialNR
 
     @property
-    def instanceState(self):
+    def instanceState(self) -> KWLState | None:
         return self._instanceState
 
     @property
-    def CurrentFanSpeed(self):
+    def CurrentFanSpeed(self) -> int | None:
         return self._CurrentFanSpeed
 
     @property
-    def AtHomeFanSpeed(self):
+    def AtHomeFanSpeed(self) -> int | None:
         return self._atHomeFanSpeed
 
     @property
-    def AwayFanSpeed(self):
+    def AwayFanSpeed(self) -> int | None:
         return self._awayFanSpeed
 
     @property
-    def IntensivFanSpeed(self):
+    def IntensivFanSpeed(self) -> int | None:
         return self._intensivFanSpeed
 
     @property
-    def IntensivDuration(self):
+    def IntensivDuration(self) -> datetime.time | None:
         return self._intensivDuration
 
     @property
-    def OutsideTemperature(self):
+    def OutsideTemperature(self) -> float | None:
         return self._OutsideTemperature
 
     @property
-    def SupplyTemperature(self):
+    def SupplyTemperature(self) -> float | None:
         return self._SupplyTemperature
 
     @property
-    def IndoorTemperature(self):
+    def IndoorTemperature(self) -> float | None:
         return self._IndoorTemperature
 
     @property
-    def ExhaustTemperature(self):
+    def ExhaustTemperature(self) -> float | None:
         return self._ExhaustTemperature
 
     @property
-    def AirRH(self):
+    def AirRH(self) -> int | None:
         return self._AirRH
 
     @property
-    def filterInterval(self):
+    def filterInterval(self) -> int | None:
         return self._filterInterval
 
     @property
-    def filterChanged(self):
+    def filterChanged(self) -> datetime.date | None:
         return self._filterChanged
 
     @property
-    def filterDue(self):
+    def filterDue(self) -> datetime.date | None:
         return self._filterDue
 
     @property
-    def IsOn(self):
+    def IsOn(self) -> bool | None:
         return self._isOn
 
     @property
-    def CO2Value(self):
+    def CO2Value(self) -> int | None:
         return self._CO2Value

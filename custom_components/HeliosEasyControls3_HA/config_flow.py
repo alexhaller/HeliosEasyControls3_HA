@@ -9,6 +9,7 @@ from typing import Any
 import voluptuous as vol
 
 from homeassistant import config_entries, exceptions
+from homeassistant.config_entries import ConfigFlowResult
 from homeassistant.core import HomeAssistant
 
 from .const import DOMAIN
@@ -18,13 +19,14 @@ _LOGGER = logging.getLogger(__name__)
 
 DATA_SCHEMA = vol.Schema({"host": str})
 
-# Accepts IPv4 addresses or valid hostnames (e.g. helios.local, 192.168.1.10)
+# Accepts IPv4 addresses (each octet 0-255) or valid hostnames (e.g. helios.local, 192.168.1.10)
+_OCTET = r"(25[0-5]|2[0-4]\d|1\d{2}|[1-9]\d|\d)"
 _HOST_RE = re.compile(
     r"^("
-    r"(\d{1,3}\.){3}\d{1,3}"           # IPv4
-    r"|"
-    r"([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?"  # hostname
-    r")$"
+    + _OCTET + r"\." + _OCTET + r"\." + _OCTET + r"\." + _OCTET  # IPv4
+    + r"|"
+    + r"([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?"  # hostname
+    + r")$"
 )
 
 
@@ -47,13 +49,13 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
 
-    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> dict[str, Any]:
+    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Handle the initial step."""
         errors: dict[str, str] = {}
         if user_input is not None:
             try:
                 info = await validate_input(self.hass, user_input)
-                return self.async_create_entry(title=info["title"], data=user_input)
+                return self.async_create_entry(title=info["title"], data={"host": info["title"]})
             except CannotConnect:
                 errors["base"] = "cannot_connect"
             except InvalidHost:
