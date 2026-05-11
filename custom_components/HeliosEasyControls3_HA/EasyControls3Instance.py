@@ -48,7 +48,7 @@ class EasyControls3Instance:
         self._totalUptimeHours: int | None = None
         self._currentUptimeHours: int | None = None
         self._filterRemainingDays: int | None = None
-        # Temperature targets (read-only)
+        # Temperature targets (read-only from device settings)
         self._homeAirTempTarget: float | None = None
         self._awayAirTempTarget: float | None = None
         self._boostAirTempTarget: float | None = None
@@ -58,6 +58,30 @@ class EasyControls3Instance:
         self._rhSensors: list[int | None] = [None] * 6
         self._co2Sensors: list[int | None] = [None] * 6
         self._vocSensors: list[int | None] = [None] * 4
+        # Extra and Fireplace mode fan speeds and durations
+        self._extraTimerRemaining: int | None = None
+        self._fireplaceExtractFanSpeed: int | None = None
+        self._fireplaceSupplyFanSpeed: int | None = None
+        self._extraExtractFanSpeed: int | None = None
+        self._extraSupplyFanSpeed: int | None = None
+        self._extraModeDuration: datetime.time | None = None
+        self._fireplaceModeDuration: datetime.time | None = None
+
+    def _build_write_command(self, *items: tuple[int, int]) -> bytes:
+        n = len(items)
+        length = n * 2 + 2
+        payload = bytearray()
+        payload += length.to_bytes(2, "little")
+        payload += b"\xf9\x00"
+        for register, value in items:
+            payload += register.to_bytes(2, "little")
+            payload += value.to_bytes(2, "little")
+        checksum = sum(
+            (payload[i * 2 + 1] << 8) + payload[i * 2]
+            for i in range(len(payload) // 2)
+        ) & 0xFFFF
+        payload += checksum.to_bytes(2, "little")
+        return bytes(payload)
 
     async def _exchangeData(self, request: bytes) -> bytes:
         async with self._lock, connect(self._url) as websocket:
@@ -133,7 +157,7 @@ class EasyControls3Instance:
             months=int(self._filterInterval)
         )
 
-        # Intensive mode duration in minutes (offset 493)
+        # Intensive mode duration in minutes (offset 493) — A_CYC_BOOST_TIME (20544)
         intensivDurationInMinutes = data[493]
         intensivDurationHours = intensivDurationInMinutes // 60
         intensivDurationMinutes = intensivDurationInMinutes - 60 * intensivDurationHours
@@ -149,25 +173,37 @@ class EasyControls3Instance:
         self._supplyFanRPM = read_word(73)    # A_CYC_SUPP_FAN_SPEED (4362)
 
         # Software state — g_cyclone_sw_state (buf_start=106, reg_start=4608)
-        self._defrosting = bool(data[109 * 2 + 1])           # A_CYC_DEFROSTING (4611)
-        self._weeklyTimerEnabled = bool(data[113 * 2 + 1])   # A_CYC_WEEKLY_TIMER_ENABLED (4615)
-        cell_state_raw = data[114 * 2 + 1]                   # A_CYC_CELL_STATE (4616)
+        self._defrosting = bool(data[109 * 2 + 1])            # A_CYC_DEFROSTING (4611)
+        self._extraTimerRemaining = data[112 * 2 + 1]         # A_CYC_EXTRA_TIMER (4614)
+        self._weeklyTimerEnabled = bool(data[113 * 2 + 1])    # A_CYC_WEEKLY_TIMER_ENABLED (4615)
+        cell_state_raw = data[114 * 2 + 1]                    # A_CYC_CELL_STATE (4616)
         self._cellState = CellState(cell_state_raw) if cell_state_raw < 4 else None
-        self._totalUptimeYears = read_word(115)               # A_CYC_TOTAL_UP_TIME_YEARS (4617)
-        self._totalUptimeHours = read_word(116)               # A_CYC_TOTAL_UP_TIME_HOURS (4618)
-        self._currentUptimeHours = read_word(117)             # A_CYC_CURRENT_UP_TIME_HOURS (4619)
-        self._filterRemainingDays = read_word(118)            # A_CYC_REMAINING_TIME_FOR_FILTER (4620)
-        self._emergencyStopActivated = bool(data[122 * 2 + 1])  # A_CYC_EMERGENCY_STOP_IS_ACTIVATED (4624)
+        self._totalUptimeYears = read_word(115)                # A_CYC_TOTAL_UP_TIME_YEARS (4617)
+        self._totalUptimeHours = read_word(116)                # A_CYC_TOTAL_UP_TIME_HOURS (4618)
+        self._currentUptimeHours = read_word(117)              # A_CYC_CURRENT_UP_TIME_HOURS (4619)
+        self._filterRemainingDays = read_word(118)             # A_CYC_REMAINING_TIME_FOR_FILTER (4620)
+        self._emergencyStopActivated = bool(data[122 * 2 + 1]) # A_CYC_EMERGENCY_STOP_IS_ACTIVATED (4624)
 
         # Output — g_cyclone_output (buf_start=138, reg_start=4864)
-        self._bypassOpen = bool(data[144 * 2 + 1])           # A_CYC_IO_BYPASS (4870)
+        self._bypassOpen = bool(data[144 * 2 + 1])            # A_CYC_IO_BYPASS (4870)
 
-        # Temperature targets — g_cyclone_settings (buf_start=182, reg_start=20480)
-        self._extraAirTempTarget = to_celsius(195)            # A_CYC_EXTRA_AIR_TEMP_TARGET (20493)
-        self._fireplaceAirTempTarget = to_celsius(199)        # A_CYC_FIREPLACE_AIR_TEMP_TARGET (20497)
-        self._awayAirTempTarget = to_celsius(204)             # A_CYC_AWAY_AIR_TEMP_TARGET (20502)
-        self._homeAirTempTarget = to_celsius(210)             # A_CYC_HOME_AIR_TEMP_TARGET (20508)
-        self._boostAirTempTarget = to_celsius(216)            # A_CYC_BOOST_AIR_TEMP_TARGET (20514)
+        # Settings — g_cyclone_settings (buf_start=182, reg_start=20480)
+        self._fireplaceExtractFanSpeed = data[189 * 2 + 1]    # A_CYC_FIREPLACE_EXTR_FAN (20487)
+        self._fireplaceSupplyFanSpeed = data[190 * 2 + 1]     # A_CYC_FIREPLACE_SUPP_FAN (20488)
+        self._extraAirTempTarget = to_celsius(195)             # A_CYC_EXTRA_AIR_TEMP_TARGET (20493)
+        self._extraExtractFanSpeed = data[196 * 2 + 1]        # A_CYC_EXTRA_EXTR_FAN (20494)
+        self._extraSupplyFanSpeed = data[197 * 2 + 1]         # A_CYC_EXTRA_SUPP_FAN (20495)
+
+        extra_min = data[198 * 2 + 1]                         # A_CYC_EXTRA_TIME (20496)
+        self._extraModeDuration = datetime.time(extra_min // 60, extra_min % 60)
+
+        self._fireplaceAirTempTarget = to_celsius(199)         # A_CYC_FIREPLACE_AIR_TEMP_TARGET (20497)
+        self._awayAirTempTarget = to_celsius(204)              # A_CYC_AWAY_AIR_TEMP_TARGET (20502)
+        self._homeAirTempTarget = to_celsius(210)              # A_CYC_HOME_AIR_TEMP_TARGET (20508)
+        self._boostAirTempTarget = to_celsius(216)             # A_CYC_BOOST_AIR_TEMP_TARGET (20514)
+
+        fp_min = data[247 * 2 + 1]                            # A_CYC_FIREPLACE_TIME (20545)
+        self._fireplaceModeDuration = datetime.time(fp_min // 60, fp_min % 60)
 
         # RH sensors 0-5 — A_CYC_RH_SENSOR_0..5 (4373..4378), buf 84..89
         for i in range(6):
@@ -207,7 +243,6 @@ class EasyControls3Instance:
 
         request = bytes.fromhex(requestData)
         response = await self._exchangeData(request)
-
         if bytes.fromhex("0200f500f700") == response:
             LOGGER.debug("mode switch: expected response received")
         else:
@@ -298,6 +333,84 @@ class EasyControls3Instance:
             LOGGER.debug("duration set: expected response received")
         else:
             LOGGER.warning("duration set: unexpected response from device")
+
+    async def _setTemperatureTarget(self, register: int, celsius: float) -> None:
+        value = round((celsius + 273.15) * 100)
+        response = await self._exchangeData(self._build_write_command((register, value)))
+        if bytes.fromhex("0200f500f700") == response:
+            LOGGER.debug("temperature target set: expected response received")
+        else:
+            LOGGER.warning("temperature target set: unexpected response from device")
+
+    async def setHomeAirTempTarget(self, celsius: float) -> None:
+        await self._setTemperatureTarget(0x501C, celsius)  # A_CYC_HOME_AIR_TEMP_TARGET (20508)
+
+    async def setAwayAirTempTarget(self, celsius: float) -> None:
+        await self._setTemperatureTarget(0x5016, celsius)  # A_CYC_AWAY_AIR_TEMP_TARGET (20502)
+
+    async def setBoostAirTempTarget(self, celsius: float) -> None:
+        await self._setTemperatureTarget(0x5022, celsius)  # A_CYC_BOOST_AIR_TEMP_TARGET (20514)
+
+    async def setExtraAirTempTarget(self, celsius: float) -> None:
+        await self._setTemperatureTarget(0x500D, celsius)  # A_CYC_EXTRA_AIR_TEMP_TARGET (20493)
+
+    async def setFireplaceAirTempTarget(self, celsius: float) -> None:
+        await self._setTemperatureTarget(0x5011, celsius)  # A_CYC_FIREPLACE_AIR_TEMP_TARGET (20497)
+
+    async def setFireplaceExtractFanSpeed(self, speed: int) -> None:
+        speed = self.checkFanSpeedLimit(speed)
+        response = await self._exchangeData(self._build_write_command((0x5007, speed)))  # A_CYC_FIREPLACE_EXTR_FAN (20487)
+        if bytes.fromhex("0200f500f700") == response:
+            LOGGER.debug("fireplace extract fan speed set: expected response received")
+        else:
+            LOGGER.warning("fireplace extract fan speed set: unexpected response from device")
+
+    async def setFireplaceSupplyFanSpeed(self, speed: int) -> None:
+        speed = self.checkFanSpeedLimit(speed)
+        response = await self._exchangeData(self._build_write_command((0x5008, speed)))  # A_CYC_FIREPLACE_SUPP_FAN (20488)
+        if bytes.fromhex("0200f500f700") == response:
+            LOGGER.debug("fireplace supply fan speed set: expected response received")
+        else:
+            LOGGER.warning("fireplace supply fan speed set: unexpected response from device")
+
+    async def setExtraExtractFanSpeed(self, speed: int) -> None:
+        speed = self.checkFanSpeedLimit(speed)
+        response = await self._exchangeData(self._build_write_command((0x500E, speed)))  # A_CYC_EXTRA_EXTR_FAN (20494)
+        if bytes.fromhex("0200f500f700") == response:
+            LOGGER.debug("extra extract fan speed set: expected response received")
+        else:
+            LOGGER.warning("extra extract fan speed set: unexpected response from device")
+
+    async def setExtraSupplyFanSpeed(self, speed: int) -> None:
+        speed = self.checkFanSpeedLimit(speed)
+        response = await self._exchangeData(self._build_write_command((0x500F, speed)))  # A_CYC_EXTRA_SUPP_FAN (20495)
+        if bytes.fromhex("0200f500f700") == response:
+            LOGGER.debug("extra supply fan speed set: expected response received")
+        else:
+            LOGGER.warning("extra supply fan speed set: unexpected response from device")
+
+    async def setExtraModeDuration(self, t: datetime.time) -> None:
+        duration = max(1, min(0x5A0, t.hour * 60 + t.minute))
+        response = await self._exchangeData(self._build_write_command((0x5010, duration)))  # A_CYC_EXTRA_TIME (20496)
+        if bytes.fromhex("0200f500f700") == response:
+            LOGGER.debug("extra mode duration set: expected response received")
+        else:
+            LOGGER.warning("extra mode duration set: unexpected response from device")
+
+    async def setFireplaceModeDuration(self, t: datetime.time) -> None:
+        duration = max(1, min(0x5A0, t.hour * 60 + t.minute))
+        response = await self._exchangeData(self._build_write_command((0x5041, duration)))  # A_CYC_FIREPLACE_TIME (20545)
+        if bytes.fromhex("0200f500f700") == response:
+            LOGGER.debug("fireplace mode duration set: expected response received")
+        else:
+            LOGGER.warning("fireplace mode duration set: unexpected response from device")
+
+    async def setWeeklyTimerEnabled(self, enabled: bool) -> None:
+        response = await self._exchangeData(self._build_write_command((0x1207, int(enabled))))  # A_CYC_WEEKLY_TIMER_ENABLED (4615)
+        if bytes.fromhex("0200f500f700") == response:
+            LOGGER.debug("weekly timer set: expected response received")
+        else:
+            LOGGER.warning("weekly timer set: unexpected response from device")
 
     async def test_connection(self) -> bool:
         try:
@@ -460,6 +573,34 @@ class EasyControls3Instance:
     @property
     def FireplaceAirTempTarget(self) -> float | None:
         return self._fireplaceAirTempTarget
+
+    @property
+    def ExtraTimerRemaining(self) -> int | None:
+        return self._extraTimerRemaining
+
+    @property
+    def FireplaceExtractFanSpeed(self) -> int | None:
+        return self._fireplaceExtractFanSpeed
+
+    @property
+    def FireplaceSupplyFanSpeed(self) -> int | None:
+        return self._fireplaceSupplyFanSpeed
+
+    @property
+    def ExtraExtractFanSpeed(self) -> int | None:
+        return self._extraExtractFanSpeed
+
+    @property
+    def ExtraSupplyFanSpeed(self) -> int | None:
+        return self._extraSupplyFanSpeed
+
+    @property
+    def ExtraModeDuration(self) -> datetime.time | None:
+        return self._extraModeDuration
+
+    @property
+    def FireplaceModeDuration(self) -> datetime.time | None:
+        return self._fireplaceModeDuration
 
     def rhSensor(self, index: int) -> int | None:
         return self._rhSensors[index]

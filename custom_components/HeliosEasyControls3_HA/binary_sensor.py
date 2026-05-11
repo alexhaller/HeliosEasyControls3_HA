@@ -17,7 +17,6 @@ async def async_setup_entry(
         DefrostingBinarySensor(coordinator),
         EmergencyStopBinarySensor(coordinator),
         BypassBinarySensor(coordinator),
-        WeeklyTimerBinarySensor(coordinator),
     ])
 
 
@@ -66,20 +65,3 @@ class BypassBinarySensor(EasyControls3BaseEntity, BinarySensorEntity):
     @property
     def icon(self) -> str:
         return "mdi:valve-open"
-
-
-class WeeklyTimerBinarySensor(EasyControls3BaseEntity, BinarySensorEntity):
-    device_class = BinarySensorDeviceClass.RUNNING
-
-    def __init__(self, coordinator: EasyControls3Coordinator) -> None:
-        super().__init__(coordinator)
-        self._attr_unique_id = f"{self._device.serialNR}_WeeklyTimerEnabled"
-        self._attr_name = f"{self._device.deviceModel} Weekly Timer Enabled"
-
-    @property
-    def is_on(self) -> bool | None:
-        return self._device.WeeklyTimerEnabled
-
-    @property
-    def icon(self) -> str:
-        return "mdi:calendar-clock"

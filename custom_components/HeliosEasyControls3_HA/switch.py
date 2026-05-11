@@ -13,7 +13,10 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator: EasyControls3Coordinator = hass.data[DOMAIN][config_entry.entry_id]
-    async_add_entities([KWLOnOffSwitch(coordinator)])
+    async_add_entities([
+        KWLOnOffSwitch(coordinator),
+        WeeklyTimerSwitch(coordinator),
+    ])
 
 
 class KWLOnOffSwitch(EasyControls3BaseEntity, SwitchEntity):
@@ -34,4 +37,29 @@ class KWLOnOffSwitch(EasyControls3BaseEntity, SwitchEntity):
 
     async def async_turn_off(self, **kwargs) -> None:
         await self._device.turnOffOn(requestTurnOff=True)
+        await self.coordinator.async_request_refresh()
+
+
+class WeeklyTimerSwitch(EasyControls3BaseEntity, SwitchEntity):
+    device_class = SwitchDeviceClass.SWITCH
+
+    def __init__(self, coordinator: EasyControls3Coordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{self._device.serialNR}_WeeklyTimerSwitch"
+        self._attr_name = f"{self._device.deviceModel} Weekly Timer"
+
+    @property
+    def is_on(self) -> bool | None:
+        return self._device.WeeklyTimerEnabled
+
+    @property
+    def icon(self) -> str:
+        return "mdi:calendar-clock"
+
+    async def async_turn_on(self, **kwargs) -> None:
+        await self._device.setWeeklyTimerEnabled(True)
+        await self.coordinator.async_request_refresh()
+
+    async def async_turn_off(self, **kwargs) -> None:
+        await self._device.setWeeklyTimerEnabled(False)
         await self.coordinator.async_request_refresh()

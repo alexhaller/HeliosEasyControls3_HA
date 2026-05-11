@@ -46,6 +46,7 @@ async def async_setup_entry(
         TotalUptimeHoursSensor(coordinator),
         CurrentUptimeHoursSensor(coordinator),
         HeatRecoveryEfficiency(coordinator),
+        ExtraTimerRemainingSensor(coordinator),
     ]
 
     for i in range(6):
@@ -341,6 +342,26 @@ class CurrentUptimeHoursSensor(EasyControls3BaseEntity, SensorEntity):
     @property
     def native_value(self):
         return self._device.CurrentUptimeHours
+
+    @property
+    def icon(self) -> str:
+        return "mdi:timer-outline"
+
+
+class ExtraTimerRemainingSensor(EasyControls3BaseEntity, SensorEntity):
+    device_class = SensorDeviceClass.DURATION
+    native_unit_of_measurement = UnitOfTime.MINUTES
+    state_class = SensorStateClass.MEASUREMENT
+    suggested_display_precision = 0
+
+    def __init__(self, coordinator: EasyControls3Coordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{self._device.serialNR}_ExtraTimerRemaining"
+        self._attr_name = f"{self._device.deviceModel} Extra Mode Timer Remaining"
+
+    @property
+    def native_value(self):
+        return self._device.ExtraTimerRemaining
 
     @property
     def icon(self) -> str:
