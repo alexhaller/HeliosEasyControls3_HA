@@ -13,17 +13,55 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator: EasyControls3Coordinator = hass.data[DOMAIN][config_entry.entry_id]
-    async_add_entities([
-        KWLOnOffSwitch(coordinator),
-        WeeklyTimerSwitch(coordinator),
-        FilterReminderSwitch(coordinator),
-        ControlSwitch(coordinator, "rhControlHome", "RH Control Home", "RhControlHome", "setRhControlHome"),
-        ControlSwitch(coordinator, "co2ControlHome", "CO2 Control Home", "Co2ControlHome", "setCo2ControlHome"),
-        ControlSwitch(coordinator, "rhControlAway", "RH Control Away", "RhControlAway", "setRhControlAway"),
-        ControlSwitch(coordinator, "co2ControlAway", "CO2 Control Away", "Co2ControlAway", "setCo2ControlAway"),
-        ControlSwitch(coordinator, "rhControlBoost", "RH Control Boost", "RhControlBoost", "setRhControlBoost"),
-        ControlSwitch(coordinator, "co2ControlBoost", "CO2 Control Boost", "Co2ControlBoost", "setCo2ControlBoost"),
-    ])
+    async_add_entities(
+        [
+            KWLOnOffSwitch(coordinator),
+            WeeklyTimerSwitch(coordinator),
+            FilterReminderSwitch(coordinator),
+            ControlSwitch(
+                coordinator,
+                "rhControlHome",
+                "RH Control Home",
+                "RhControlHome",
+                "setRhControlHome",
+            ),
+            ControlSwitch(
+                coordinator,
+                "co2ControlHome",
+                "CO2 Control Home",
+                "Co2ControlHome",
+                "setCo2ControlHome",
+            ),
+            ControlSwitch(
+                coordinator,
+                "rhControlAway",
+                "RH Control Away",
+                "RhControlAway",
+                "setRhControlAway",
+            ),
+            ControlSwitch(
+                coordinator,
+                "co2ControlAway",
+                "CO2 Control Away",
+                "Co2ControlAway",
+                "setCo2ControlAway",
+            ),
+            ControlSwitch(
+                coordinator,
+                "rhControlBoost",
+                "RH Control Boost",
+                "RhControlBoost",
+                "setRhControlBoost",
+            ),
+            ControlSwitch(
+                coordinator,
+                "co2ControlBoost",
+                "CO2 Control Boost",
+                "Co2ControlBoost",
+                "setCo2ControlBoost",
+            ),
+        ]
+    )
 
 
 class KWLOnOffSwitch(EasyControls3BaseEntity, SwitchEntity):

@@ -22,7 +22,14 @@ EasyControls3Coordinator = DataUpdateCoordinator[EasyControls3Instance]
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS = [Platform.BINARY_SENSOR, Platform.NUMBER, Platform.SELECT, Platform.SENSOR, Platform.TIME, Platform.SWITCH]
+PLATFORMS = [
+    Platform.BINARY_SENSOR,
+    Platform.NUMBER,
+    Platform.SELECT,
+    Platform.SENSOR,
+    Platform.TIME,
+    Platform.SWITCH,
+]
 
 SCAN_INTERVAL = timedelta(seconds=60)
 

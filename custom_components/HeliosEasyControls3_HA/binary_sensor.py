@@ -1,4 +1,7 @@
-from homeassistant.components.binary_sensor import BinarySensorDeviceClass, BinarySensorEntity
+from homeassistant.components.binary_sensor import (
+    BinarySensorDeviceClass,
+    BinarySensorEntity,
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -13,11 +16,13 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator: EasyControls3Coordinator = hass.data[DOMAIN][config_entry.entry_id]
-    async_add_entities([
-        DefrostingBinarySensor(coordinator),
-        EmergencyStopBinarySensor(coordinator),
-        BypassBinarySensor(coordinator),
-    ])
+    async_add_entities(
+        [
+            DefrostingBinarySensor(coordinator),
+            EmergencyStopBinarySensor(coordinator),
+            BypassBinarySensor(coordinator),
+        ]
+    )
 
 
 class DefrostingBinarySensor(EasyControls3BaseEntity, BinarySensorEntity):

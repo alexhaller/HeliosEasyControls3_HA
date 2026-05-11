@@ -23,7 +23,13 @@ DATA_SCHEMA = vol.Schema({"host": str})
 _OCTET = r"(25[0-5]|2[0-4]\d|1\d{2}|[1-9]\d|\d)"
 _HOST_RE = re.compile(
     r"^("
-    + _OCTET + r"\." + _OCTET + r"\." + _OCTET + r"\." + _OCTET  # IPv4
+    + _OCTET
+    + r"\."
+    + _OCTET
+    + r"\."
+    + _OCTET
+    + r"\."
+    + _OCTET  # IPv4
     + r"|"
     + r"([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?"  # hostname
     + r")$"
@@ -49,13 +55,17 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
 
-    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+    async def async_step_user(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         """Handle the initial step."""
         errors: dict[str, str] = {}
         if user_input is not None:
             try:
                 info = await validate_input(self.hass, user_input)
-                return self.async_create_entry(title=info["title"], data={"host": info["title"]})
+                return self.async_create_entry(
+                    title=info["title"], data={"host": info["title"]}
+                )
             except CannotConnect:
                 errors["base"] = "cannot_connect"
             except InvalidHost:

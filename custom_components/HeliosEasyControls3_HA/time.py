@@ -15,11 +15,13 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator: EasyControls3Coordinator = hass.data[DOMAIN][config_entry.entry_id]
-    async_add_entities([
-        IntensiveDuration(coordinator),
-        ExtraModeDuration(coordinator),
-        FireplaceModeDuration(coordinator),
-    ])
+    async_add_entities(
+        [
+            IntensiveDuration(coordinator),
+            ExtraModeDuration(coordinator),
+            FireplaceModeDuration(coordinator),
+        ]
+    )
 
 
 class IntensiveDuration(EasyControls3BaseEntity, TimeEntity):

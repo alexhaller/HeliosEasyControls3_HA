@@ -14,11 +14,17 @@ Key files:
 
 ## Code quality
 
-- Always check Python code with:
-  - `ruff check .` — linting
-  - `mypy custom_components/` — static type checking
-- Run both tools after **every** change and after **every** code review — not only on the changed files but on the entire codebase.
-- Fix all reported issues before considering a change complete.
+Run all four checks after **every** change and after **every** code review. Fix all reported issues before considering a change complete.
+
+| Tool | Command | What it checks |
+|---|---|---|
+| ruff lint | `ruff check .` | Linting, import order, style rules |
+| ruff format | `ruff format --check .` | Code formatting (run `ruff format .` to auto-fix) |
+| mypy | `mypy custom_components/` | Static type checking |
+| hassfest | CI only (`.github/workflows/validate.yml`) | HA manifest, strings, platform structure |
+
+`hassfest` runs automatically on every push via GitHub Actions — it cannot be run locally without cloning the HA core repository.
+
 - Do not add features, refactors, or "improvements" beyond what is explicitly requested.
 - Do not add docstrings or comments to code you did not change.
 

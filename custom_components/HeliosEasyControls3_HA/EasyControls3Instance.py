@@ -90,10 +90,13 @@ class EasyControls3Instance:
         for register, value in items:
             payload += register.to_bytes(2, "little")
             payload += value.to_bytes(2, "little")
-        checksum = sum(
-            (payload[i * 2 + 1] << 8) + payload[i * 2]
-            for i in range(len(payload) // 2)
-        ) & 0xFFFF
+        checksum = (
+            sum(
+                (payload[i * 2 + 1] << 8) + payload[i * 2]
+                for i in range(len(payload) // 2)
+            )
+            & 0xFFFF
+        )
         payload += checksum.to_bytes(2, "little")
         return bytes(payload)
 
@@ -149,13 +152,17 @@ class EasyControls3Instance:
 
         # Temperatures (offsets 65-69): raw value / 100 - 273.15 gives Celsius
         def to_celsius(offset: int) -> float:
-            return round((data[offset * 2] * 256 + data[offset * 2 + 1]) / 100 - 273.15, 1)
+            return round(
+                (data[offset * 2] * 256 + data[offset * 2 + 1]) / 100 - 273.15, 1
+            )
 
         self._OutsideTemperature = to_celsius(67)
         self._SupplyTemperature = to_celsius(69)
         self._IndoorTemperature = to_celsius(65)
         self._ExhaustTemperature = to_celsius(66)
-        self._supplyCellAirTemperature = to_celsius(68)  # A_CYC_TEMP_SUPPLY_CELL_AIR (4357)
+        self._supplyCellAirTemperature = to_celsius(
+            68
+        )  # A_CYC_TEMP_SUPPLY_CELL_AIR (4357)
 
         # Humidity (offset 74) — A_CYC_RH_VALUE (4363)
         self._AirRH = data[74 * 2 + 1]
@@ -184,49 +191,79 @@ class EasyControls3Instance:
         self._isOn = bool(data[217] == 0)
 
         # Fan RPM — g_cyclone_hw_state (buf_start=63, reg_start=4352)
-        self._extractFanRPM = read_word(72)   # A_CYC_EXTR_FAN_SPEED (4361)
-        self._supplyFanRPM = read_word(73)    # A_CYC_SUPP_FAN_SPEED (4362)
+        self._extractFanRPM = read_word(72)  # A_CYC_EXTR_FAN_SPEED (4361)
+        self._supplyFanRPM = read_word(73)  # A_CYC_SUPP_FAN_SPEED (4362)
 
         # Software state — g_cyclone_sw_state (buf_start=106, reg_start=4608)
-        self._defrosting = bool(data[109 * 2 + 1])            # A_CYC_DEFROSTING (4611)
-        self._boostTimerRemaining = read_word(110)             # A_CYC_BOOST_TIMER (4612)
-        self._fireplaceTimerRemaining = read_word(111)         # A_CYC_FIREPLACE_TIMER (4613)
-        self._extraTimerRemaining = data[112 * 2 + 1]         # A_CYC_EXTRA_TIMER (4614)
-        self._weeklyTimerEnabled = bool(data[113 * 2 + 1])    # A_CYC_WEEKLY_TIMER_ENABLED (4615)
-        cell_state_raw = data[114 * 2 + 1]                    # A_CYC_CELL_STATE (4616)
+        self._defrosting = bool(data[109 * 2 + 1])  # A_CYC_DEFROSTING (4611)
+        self._boostTimerRemaining = read_word(110)  # A_CYC_BOOST_TIMER (4612)
+        self._fireplaceTimerRemaining = read_word(111)  # A_CYC_FIREPLACE_TIMER (4613)
+        self._extraTimerRemaining = data[112 * 2 + 1]  # A_CYC_EXTRA_TIMER (4614)
+        self._weeklyTimerEnabled = bool(
+            data[113 * 2 + 1]
+        )  # A_CYC_WEEKLY_TIMER_ENABLED (4615)
+        cell_state_raw = data[114 * 2 + 1]  # A_CYC_CELL_STATE (4616)
         self._cellState = CellState(cell_state_raw) if cell_state_raw < 4 else None
-        self._totalUptimeYears = read_word(115)                # A_CYC_TOTAL_UP_TIME_YEARS (4617)
-        self._totalUptimeHours = read_word(116)                # A_CYC_TOTAL_UP_TIME_HOURS (4618)
-        self._currentUptimeHours = read_word(117)              # A_CYC_CURRENT_UP_TIME_HOURS (4619)
-        self._filterRemainingDays = read_word(118)             # A_CYC_REMAINING_TIME_FOR_FILTER (4620)
-        self._emergencyStopActivated = bool(data[122 * 2 + 1]) # A_CYC_EMERGENCY_STOP_IS_ACTIVATED (4624)
+        self._totalUptimeYears = read_word(115)  # A_CYC_TOTAL_UP_TIME_YEARS (4617)
+        self._totalUptimeHours = read_word(116)  # A_CYC_TOTAL_UP_TIME_HOURS (4618)
+        self._currentUptimeHours = read_word(117)  # A_CYC_CURRENT_UP_TIME_HOURS (4619)
+        self._filterRemainingDays = read_word(
+            118
+        )  # A_CYC_REMAINING_TIME_FOR_FILTER (4620)
+        self._emergencyStopActivated = bool(
+            data[122 * 2 + 1]
+        )  # A_CYC_EMERGENCY_STOP_IS_ACTIVATED (4624)
 
         # Output — g_cyclone_output (buf_start=138, reg_start=4864)
-        self._bypassOpen = bool(data[144 * 2 + 1])            # A_CYC_IO_BYPASS (4870)
+        self._bypassOpen = bool(data[144 * 2 + 1])  # A_CYC_IO_BYPASS (4870)
 
         # Settings — g_cyclone_settings (buf_start=182, reg_start=20480)
-        self._fireplaceExtractFanSpeed = data[189 * 2 + 1]    # A_CYC_FIREPLACE_EXTR_FAN (20487)
-        self._fireplaceSupplyFanSpeed = data[190 * 2 + 1]     # A_CYC_FIREPLACE_SUPP_FAN (20488)
-        self._extraAirTempTarget = to_celsius(195)             # A_CYC_EXTRA_AIR_TEMP_TARGET (20493)
-        self._extraExtractFanSpeed = data[196 * 2 + 1]        # A_CYC_EXTRA_EXTR_FAN (20494)
-        self._extraSupplyFanSpeed = data[197 * 2 + 1]         # A_CYC_EXTRA_SUPP_FAN (20495)
+        self._fireplaceExtractFanSpeed = data[
+            189 * 2 + 1
+        ]  # A_CYC_FIREPLACE_EXTR_FAN (20487)
+        self._fireplaceSupplyFanSpeed = data[
+            190 * 2 + 1
+        ]  # A_CYC_FIREPLACE_SUPP_FAN (20488)
+        self._extraAirTempTarget = to_celsius(
+            195
+        )  # A_CYC_EXTRA_AIR_TEMP_TARGET (20493)
+        self._extraExtractFanSpeed = data[196 * 2 + 1]  # A_CYC_EXTRA_EXTR_FAN (20494)
+        self._extraSupplyFanSpeed = data[197 * 2 + 1]  # A_CYC_EXTRA_SUPP_FAN (20495)
 
-        extra_min = data[198 * 2 + 1]                         # A_CYC_EXTRA_TIME (20496)
+        extra_min = data[198 * 2 + 1]  # A_CYC_EXTRA_TIME (20496)
         self._extraModeDuration = datetime.time(extra_min // 60, extra_min % 60)
 
-        self._fireplaceAirTempTarget = to_celsius(199)         # A_CYC_FIREPLACE_AIR_TEMP_TARGET (20497)
-        self._rhControlHome = bool(data[201 * 2 + 1])         # A_CYC_RH_CTRL_ENABLED_HOME (20499)
-        self._co2ControlHome = bool(data[202 * 2 + 1])        # A_CYC_CO2_CTRL_ENABLED_HOME (20500)
-        self._awayAirTempTarget = to_celsius(204)              # A_CYC_AWAY_AIR_TEMP_TARGET (20502)
-        self._filterReminderEnabled = not bool(data[205 * 2 + 1])  # A_CYC_FILTER_REMINDER_DISABLED (20503), inverted
-        self._rhControlAway = bool(data[207 * 2 + 1])         # A_CYC_RH_CTRL_ENABLED_AWAY (20505)
-        self._co2ControlAway = bool(data[208 * 2 + 1])        # A_CYC_CO2_CTRL_ENABLED_AWAY (20506)
-        self._homeAirTempTarget = to_celsius(210)              # A_CYC_HOME_AIR_TEMP_TARGET (20508)
-        self._rhControlBoost = bool(data[213 * 2 + 1])        # A_CYC_RH_CTRL_ENABLED_BOOST (20511)
-        self._co2ControlBoost = bool(data[214 * 2 + 1])       # A_CYC_CO2_CTRL_ENABLED_BOOST (20512)
-        self._boostAirTempTarget = to_celsius(216)             # A_CYC_BOOST_AIR_TEMP_TARGET (20514)
+        self._fireplaceAirTempTarget = to_celsius(
+            199
+        )  # A_CYC_FIREPLACE_AIR_TEMP_TARGET (20497)
+        self._rhControlHome = bool(
+            data[201 * 2 + 1]
+        )  # A_CYC_RH_CTRL_ENABLED_HOME (20499)
+        self._co2ControlHome = bool(
+            data[202 * 2 + 1]
+        )  # A_CYC_CO2_CTRL_ENABLED_HOME (20500)
+        self._awayAirTempTarget = to_celsius(204)  # A_CYC_AWAY_AIR_TEMP_TARGET (20502)
+        self._filterReminderEnabled = not bool(
+            data[205 * 2 + 1]
+        )  # A_CYC_FILTER_REMINDER_DISABLED (20503), inverted
+        self._rhControlAway = bool(
+            data[207 * 2 + 1]
+        )  # A_CYC_RH_CTRL_ENABLED_AWAY (20505)
+        self._co2ControlAway = bool(
+            data[208 * 2 + 1]
+        )  # A_CYC_CO2_CTRL_ENABLED_AWAY (20506)
+        self._homeAirTempTarget = to_celsius(210)  # A_CYC_HOME_AIR_TEMP_TARGET (20508)
+        self._rhControlBoost = bool(
+            data[213 * 2 + 1]
+        )  # A_CYC_RH_CTRL_ENABLED_BOOST (20511)
+        self._co2ControlBoost = bool(
+            data[214 * 2 + 1]
+        )  # A_CYC_CO2_CTRL_ENABLED_BOOST (20512)
+        self._boostAirTempTarget = to_celsius(
+            216
+        )  # A_CYC_BOOST_AIR_TEMP_TARGET (20514)
 
-        fp_min = data[247 * 2 + 1]                            # A_CYC_FIREPLACE_TIME (20545)
+        fp_min = data[247 * 2 + 1]  # A_CYC_FIREPLACE_TIME (20545)
         self._fireplaceModeDuration = datetime.time(fp_min // 60, fp_min % 60)
 
         # RH sensors 0-5 — A_CYC_RH_SENSOR_0..5 (4373..4378), buf 84..89
@@ -284,7 +321,9 @@ class EasyControls3Instance:
     def createFanSpeedPlainRequestString(self, requestedFanSpeed: int) -> str:
         return f"{requestedFanSpeed:02x}"
 
-    def createFanSpeedModdedRequestString(self, requestedFanSpeed: int, mode: KWLState) -> str:
+    def createFanSpeedModdedRequestString(
+        self, requestedFanSpeed: int, mode: KWLState
+    ) -> str:
         offset = 30  # Intensive
 
         if mode is KWLState.AtHome:
@@ -300,8 +339,12 @@ class EasyControls3Instance:
 
     async def setFanSpeed(self, requestedFanSpeed: int, mode: KWLState) -> None:
         requestedFanSpeed = self.checkFanSpeedLimit(requestedFanSpeed)
-        requestedSpeedPlainString = self.createFanSpeedPlainRequestString(requestedFanSpeed)
-        requestedSpeedModdedString = self.createFanSpeedModdedRequestString(requestedFanSpeed, mode)
+        requestedSpeedPlainString = self.createFanSpeedPlainRequestString(
+            requestedFanSpeed
+        )
+        requestedSpeedModdedString = self.createFanSpeedModdedRequestString(
+            requestedFanSpeed, mode
+        )
 
         modeIdentifier = "21"  # Intensive
 
@@ -360,62 +403,92 @@ class EasyControls3Instance:
 
     async def _setTemperatureTarget(self, register: int, celsius: float) -> None:
         value = round((celsius + 273.15) * 100)
-        response = await self._exchangeData(self._build_write_command((register, value)))
+        response = await self._exchangeData(
+            self._build_write_command((register, value))
+        )
         if bytes.fromhex("0200f500f700") == response:
             LOGGER.debug("temperature target set: expected response received")
         else:
             LOGGER.warning("temperature target set: unexpected response from device")
 
     async def setHomeAirTempTarget(self, celsius: float) -> None:
-        await self._setTemperatureTarget(0x501C, celsius)  # A_CYC_HOME_AIR_TEMP_TARGET (20508)
+        await self._setTemperatureTarget(
+            0x501C, celsius
+        )  # A_CYC_HOME_AIR_TEMP_TARGET (20508)
 
     async def setAwayAirTempTarget(self, celsius: float) -> None:
-        await self._setTemperatureTarget(0x5016, celsius)  # A_CYC_AWAY_AIR_TEMP_TARGET (20502)
+        await self._setTemperatureTarget(
+            0x5016, celsius
+        )  # A_CYC_AWAY_AIR_TEMP_TARGET (20502)
 
     async def setBoostAirTempTarget(self, celsius: float) -> None:
-        await self._setTemperatureTarget(0x5022, celsius)  # A_CYC_BOOST_AIR_TEMP_TARGET (20514)
+        await self._setTemperatureTarget(
+            0x5022, celsius
+        )  # A_CYC_BOOST_AIR_TEMP_TARGET (20514)
 
     async def setExtraAirTempTarget(self, celsius: float) -> None:
-        await self._setTemperatureTarget(0x500D, celsius)  # A_CYC_EXTRA_AIR_TEMP_TARGET (20493)
+        await self._setTemperatureTarget(
+            0x500D, celsius
+        )  # A_CYC_EXTRA_AIR_TEMP_TARGET (20493)
 
     async def setFireplaceAirTempTarget(self, celsius: float) -> None:
-        await self._setTemperatureTarget(0x5011, celsius)  # A_CYC_FIREPLACE_AIR_TEMP_TARGET (20497)
+        await self._setTemperatureTarget(
+            0x5011, celsius
+        )  # A_CYC_FIREPLACE_AIR_TEMP_TARGET (20497)
 
     async def setFireplaceExtractFanSpeed(self, speed: int) -> None:
         speed = self.checkFanSpeedLimit(speed)
-        response = await self._exchangeData(self._build_write_command((0x5007, speed)))  # A_CYC_FIREPLACE_EXTR_FAN (20487)
+        response = await self._exchangeData(
+            self._build_write_command((0x5007, speed))
+        )  # A_CYC_FIREPLACE_EXTR_FAN (20487)
         if bytes.fromhex("0200f500f700") == response:
             LOGGER.debug("fireplace extract fan speed set: expected response received")
         else:
-            LOGGER.warning("fireplace extract fan speed set: unexpected response from device")
+            LOGGER.warning(
+                "fireplace extract fan speed set: unexpected response from device"
+            )
 
     async def setFireplaceSupplyFanSpeed(self, speed: int) -> None:
         speed = self.checkFanSpeedLimit(speed)
-        response = await self._exchangeData(self._build_write_command((0x5008, speed)))  # A_CYC_FIREPLACE_SUPP_FAN (20488)
+        response = await self._exchangeData(
+            self._build_write_command((0x5008, speed))
+        )  # A_CYC_FIREPLACE_SUPP_FAN (20488)
         if bytes.fromhex("0200f500f700") == response:
             LOGGER.debug("fireplace supply fan speed set: expected response received")
         else:
-            LOGGER.warning("fireplace supply fan speed set: unexpected response from device")
+            LOGGER.warning(
+                "fireplace supply fan speed set: unexpected response from device"
+            )
 
     async def setExtraExtractFanSpeed(self, speed: int) -> None:
         speed = self.checkFanSpeedLimit(speed)
-        response = await self._exchangeData(self._build_write_command((0x500E, speed)))  # A_CYC_EXTRA_EXTR_FAN (20494)
+        response = await self._exchangeData(
+            self._build_write_command((0x500E, speed))
+        )  # A_CYC_EXTRA_EXTR_FAN (20494)
         if bytes.fromhex("0200f500f700") == response:
             LOGGER.debug("extra extract fan speed set: expected response received")
         else:
-            LOGGER.warning("extra extract fan speed set: unexpected response from device")
+            LOGGER.warning(
+                "extra extract fan speed set: unexpected response from device"
+            )
 
     async def setExtraSupplyFanSpeed(self, speed: int) -> None:
         speed = self.checkFanSpeedLimit(speed)
-        response = await self._exchangeData(self._build_write_command((0x500F, speed)))  # A_CYC_EXTRA_SUPP_FAN (20495)
+        response = await self._exchangeData(
+            self._build_write_command((0x500F, speed))
+        )  # A_CYC_EXTRA_SUPP_FAN (20495)
         if bytes.fromhex("0200f500f700") == response:
             LOGGER.debug("extra supply fan speed set: expected response received")
         else:
-            LOGGER.warning("extra supply fan speed set: unexpected response from device")
+            LOGGER.warning(
+                "extra supply fan speed set: unexpected response from device"
+            )
 
     async def setExtraModeDuration(self, t: datetime.time) -> None:
         duration = max(1, min(0x5A0, t.hour * 60 + t.minute))
-        response = await self._exchangeData(self._build_write_command((0x5010, duration)))  # A_CYC_EXTRA_TIME (20496)
+        response = await self._exchangeData(
+            self._build_write_command((0x5010, duration))
+        )  # A_CYC_EXTRA_TIME (20496)
         if bytes.fromhex("0200f500f700") == response:
             LOGGER.debug("extra mode duration set: expected response received")
         else:
@@ -423,47 +496,69 @@ class EasyControls3Instance:
 
     async def setFireplaceModeDuration(self, t: datetime.time) -> None:
         duration = max(1, min(0x5A0, t.hour * 60 + t.minute))
-        response = await self._exchangeData(self._build_write_command((0x5041, duration)))  # A_CYC_FIREPLACE_TIME (20545)
+        response = await self._exchangeData(
+            self._build_write_command((0x5041, duration))
+        )  # A_CYC_FIREPLACE_TIME (20545)
         if bytes.fromhex("0200f500f700") == response:
             LOGGER.debug("fireplace mode duration set: expected response received")
         else:
-            LOGGER.warning("fireplace mode duration set: unexpected response from device")
+            LOGGER.warning(
+                "fireplace mode duration set: unexpected response from device"
+            )
 
     async def setWeeklyTimerEnabled(self, enabled: bool) -> None:
-        response = await self._exchangeData(self._build_write_command((0x1207, int(enabled))))  # A_CYC_WEEKLY_TIMER_ENABLED (4615)
+        response = await self._exchangeData(
+            self._build_write_command((0x1207, int(enabled)))
+        )  # A_CYC_WEEKLY_TIMER_ENABLED (4615)
         if bytes.fromhex("0200f500f700") == response:
             LOGGER.debug("weekly timer set: expected response received")
         else:
             LOGGER.warning("weekly timer set: unexpected response from device")
 
     async def _setControlFlag(self, register: int, enabled: bool) -> None:
-        response = await self._exchangeData(self._build_write_command((register, int(enabled))))
+        response = await self._exchangeData(
+            self._build_write_command((register, int(enabled)))
+        )
         if bytes.fromhex("0200f500f700") == response:
             LOGGER.debug("control flag set: expected response received")
         else:
             LOGGER.warning("control flag set: unexpected response from device")
 
     async def setRhControlHome(self, enabled: bool) -> None:
-        await self._setControlFlag(0x5013, enabled)  # A_CYC_RH_CTRL_ENABLED_HOME (20499)
+        await self._setControlFlag(
+            0x5013, enabled
+        )  # A_CYC_RH_CTRL_ENABLED_HOME (20499)
 
     async def setCo2ControlHome(self, enabled: bool) -> None:
-        await self._setControlFlag(0x5014, enabled)  # A_CYC_CO2_CTRL_ENABLED_HOME (20500)
+        await self._setControlFlag(
+            0x5014, enabled
+        )  # A_CYC_CO2_CTRL_ENABLED_HOME (20500)
 
     async def setRhControlAway(self, enabled: bool) -> None:
-        await self._setControlFlag(0x5019, enabled)  # A_CYC_RH_CTRL_ENABLED_AWAY (20505)
+        await self._setControlFlag(
+            0x5019, enabled
+        )  # A_CYC_RH_CTRL_ENABLED_AWAY (20505)
 
     async def setCo2ControlAway(self, enabled: bool) -> None:
-        await self._setControlFlag(0x501A, enabled)  # A_CYC_CO2_CTRL_ENABLED_AWAY (20506)
+        await self._setControlFlag(
+            0x501A, enabled
+        )  # A_CYC_CO2_CTRL_ENABLED_AWAY (20506)
 
     async def setRhControlBoost(self, enabled: bool) -> None:
-        await self._setControlFlag(0x501F, enabled)  # A_CYC_RH_CTRL_ENABLED_BOOST (20511)
+        await self._setControlFlag(
+            0x501F, enabled
+        )  # A_CYC_RH_CTRL_ENABLED_BOOST (20511)
 
     async def setCo2ControlBoost(self, enabled: bool) -> None:
-        await self._setControlFlag(0x5020, enabled)  # A_CYC_CO2_CTRL_ENABLED_BOOST (20512)
+        await self._setControlFlag(
+            0x5020, enabled
+        )  # A_CYC_CO2_CTRL_ENABLED_BOOST (20512)
 
     async def setFilterReminderEnabled(self, enabled: bool) -> None:
         # Register is DISABLED flag — invert
-        await self._setControlFlag(0x5017, not enabled)  # A_CYC_FILTER_REMINDER_DISABLED (20503)
+        await self._setControlFlag(
+            0x5017, not enabled
+        )  # A_CYC_FILTER_REMINDER_DISABLED (20503)
 
     async def test_connection(self) -> bool:
         try:

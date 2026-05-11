@@ -25,15 +25,54 @@ async def async_setup_entry(
     coordinator: EasyControls3Coordinator = hass.data[DOMAIN][config_entry.entry_id]
 
     entities: list[EasyControls3BaseEntity] = [
-        TemperatureSensor(coordinator, "OutsideTemperature", "Outside Temperature", "OutsideTemperature"),
-        TemperatureSensor(coordinator, "SupplyTemperature", "Supply Temperature", "SupplyTemperature"),
-        TemperatureSensor(coordinator, "IndoorTemperature", "Indoor Temperature", "IndoorTemperature"),
-        TemperatureSensor(coordinator, "ExhaustTemperature", "Exhaust Temperature", "ExhaustTemperature"),
-        TemperatureSensor(coordinator, "HomeAirTempTarget", "Home Air Temp Target", "HomeAirTempTarget"),
-        TemperatureSensor(coordinator, "AwayAirTempTarget", "Away Air Temp Target", "AwayAirTempTarget"),
-        TemperatureSensor(coordinator, "BoostAirTempTarget", "Boost Air Temp Target", "BoostAirTempTarget"),
-        TemperatureSensor(coordinator, "ExtraAirTempTarget", "Extra Air Temp Target", "ExtraAirTempTarget"),
-        TemperatureSensor(coordinator, "FireplaceAirTempTarget", "Fireplace Air Temp Target", "FireplaceAirTempTarget"),
+        TemperatureSensor(
+            coordinator,
+            "OutsideTemperature",
+            "Outside Temperature",
+            "OutsideTemperature",
+        ),
+        TemperatureSensor(
+            coordinator, "SupplyTemperature", "Supply Temperature", "SupplyTemperature"
+        ),
+        TemperatureSensor(
+            coordinator, "IndoorTemperature", "Indoor Temperature", "IndoorTemperature"
+        ),
+        TemperatureSensor(
+            coordinator,
+            "ExhaustTemperature",
+            "Exhaust Temperature",
+            "ExhaustTemperature",
+        ),
+        TemperatureSensor(
+            coordinator,
+            "HomeAirTempTarget",
+            "Home Air Temp Target",
+            "HomeAirTempTarget",
+        ),
+        TemperatureSensor(
+            coordinator,
+            "AwayAirTempTarget",
+            "Away Air Temp Target",
+            "AwayAirTempTarget",
+        ),
+        TemperatureSensor(
+            coordinator,
+            "BoostAirTempTarget",
+            "Boost Air Temp Target",
+            "BoostAirTempTarget",
+        ),
+        TemperatureSensor(
+            coordinator,
+            "ExtraAirTempTarget",
+            "Extra Air Temp Target",
+            "ExtraAirTempTarget",
+        ),
+        TemperatureSensor(
+            coordinator,
+            "FireplaceAirTempTarget",
+            "Fireplace Air Temp Target",
+            "FireplaceAirTempTarget",
+        ),
         HumiditySensor(coordinator),
         CurrentFanSpeed(coordinator),
         ExtractFanRPMSensor(coordinator),
@@ -49,7 +88,12 @@ async def async_setup_entry(
         ExtraTimerRemainingSensor(coordinator),
         BoostTimerRemainingSensor(coordinator),
         FireplaceTimerRemainingSensor(coordinator),
-        TemperatureSensor(coordinator, "SupplyCellAirTemperature", "Supply Cell Air Temperature", "SupplyCellAirTemperature"),
+        TemperatureSensor(
+            coordinator,
+            "SupplyCellAirTemperature",
+            "Supply Cell Air Temperature",
+            "SupplyCellAirTemperature",
+        ),
     ]
 
     for i in range(6):
