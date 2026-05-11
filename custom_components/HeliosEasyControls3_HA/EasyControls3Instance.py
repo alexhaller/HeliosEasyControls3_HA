@@ -81,6 +81,14 @@ class EasyControls3Instance:
         self._extraModeDuration: datetime.time | None = None
         self._fireplaceModeDuration: datetime.time | None = None
 
+    _WRITE_OK: bytes = bytes.fromhex("0200f500f700")
+
+    def _check_write_response(self, response: bytes, context: str) -> None:
+        if response == self._WRITE_OK:
+            LOGGER.debug("%s: expected response received", context)
+        else:
+            LOGGER.warning("%s: unexpected response from device", context)
+
     def _build_write_command(self, *items: tuple[int, int]) -> bytes:
         n = len(items)
         length = n * 2 + 2
@@ -179,8 +187,8 @@ class EasyControls3Instance:
             months=int(self._filterInterval)
         )
 
-        # Intensive mode duration in minutes (offset 493) — A_CYC_BOOST_TIME (20544)
-        intensivDurationInMinutes = data[493]
+        # Intensive mode duration in minutes (buf 246) — A_CYC_BOOST_TIME (20544)
+        intensivDurationInMinutes = read_word(246)
         intensivDurationHours = intensivDurationInMinutes // 60
         intensivDurationMinutes = intensivDurationInMinutes - 60 * intensivDurationHours
         self._intensivDuration = datetime.time(
@@ -198,7 +206,7 @@ class EasyControls3Instance:
         self._defrosting = bool(data[109 * 2 + 1])  # A_CYC_DEFROSTING (4611)
         self._boostTimerRemaining = read_word(110)  # A_CYC_BOOST_TIMER (4612)
         self._fireplaceTimerRemaining = read_word(111)  # A_CYC_FIREPLACE_TIMER (4613)
-        self._extraTimerRemaining = data[112 * 2 + 1]  # A_CYC_EXTRA_TIMER (4614)
+        self._extraTimerRemaining = read_word(112)  # A_CYC_EXTRA_TIMER (4614)
         self._weeklyTimerEnabled = bool(
             data[113 * 2 + 1]
         )  # A_CYC_WEEKLY_TIMER_ENABLED (4615)
@@ -230,7 +238,7 @@ class EasyControls3Instance:
         self._extraExtractFanSpeed = data[196 * 2 + 1]  # A_CYC_EXTRA_EXTR_FAN (20494)
         self._extraSupplyFanSpeed = data[197 * 2 + 1]  # A_CYC_EXTRA_SUPP_FAN (20495)
 
-        extra_min = data[198 * 2 + 1]  # A_CYC_EXTRA_TIME (20496)
+        extra_min = read_word(198)  # A_CYC_EXTRA_TIME (20496)
         self._extraModeDuration = datetime.time(extra_min // 60, extra_min % 60)
 
         self._fireplaceAirTempTarget = to_celsius(
@@ -263,7 +271,7 @@ class EasyControls3Instance:
             216
         )  # A_CYC_BOOST_AIR_TEMP_TARGET (20514)
 
-        fp_min = data[247 * 2 + 1]  # A_CYC_FIREPLACE_TIME (20545)
+        fp_min = read_word(247)  # A_CYC_FIREPLACE_TIME (20545)
         self._fireplaceModeDuration = datetime.time(fp_min // 60, fp_min % 60)
 
         # RH sensors 0-5 — A_CYC_RH_SENSOR_0..5 (4373..4378), buf 84..89
@@ -304,10 +312,7 @@ class EasyControls3Instance:
 
         request = bytes.fromhex(requestData)
         response = await self._exchangeData(request)
-        if bytes.fromhex("0200f500f700") == response:
-            LOGGER.debug("mode switch: expected response received")
-        else:
-            LOGGER.warning("mode switch: unexpected response from device")
+        self._check_write_response(response, "mode switch")
 
     def checkFanSpeedLimit(self, requestedFanSpeed: int) -> int:
         if requestedFanSpeed < 1:
@@ -370,10 +375,7 @@ class EasyControls3Instance:
 
         request = bytes.fromhex(requestData)
         response = await self._exchangeData(request)
-        if bytes.fromhex("0200f500f700") == response:
-            LOGGER.debug("fan speed set: expected response received")
-        else:
-            LOGGER.warning("fan speed set: unexpected response from device")
+        self._check_write_response(response, "fan speed set")
 
     async def setIntensiveDuration(self, requestedDurationTime: datetime.time) -> None:
         requestedDuration = (
@@ -396,20 +398,14 @@ class EasyControls3Instance:
 
         request = bytes.fromhex(requestData)
         response = await self._exchangeData(request)
-        if bytes.fromhex("0200f500f700") == response:
-            LOGGER.debug("duration set: expected response received")
-        else:
-            LOGGER.warning("duration set: unexpected response from device")
+        self._check_write_response(response, "duration set")
 
     async def _setTemperatureTarget(self, register: int, celsius: float) -> None:
         value = round((celsius + 273.15) * 100)
         response = await self._exchangeData(
             self._build_write_command((register, value))
         )
-        if bytes.fromhex("0200f500f700") == response:
-            LOGGER.debug("temperature target set: expected response received")
-        else:
-            LOGGER.warning("temperature target set: unexpected response from device")
+        self._check_write_response(response, "temperature target set")
 
     async def setHomeAirTempTarget(self, celsius: float) -> None:
         await self._setTemperatureTarget(
@@ -441,88 +437,54 @@ class EasyControls3Instance:
         response = await self._exchangeData(
             self._build_write_command((0x5007, speed))
         )  # A_CYC_FIREPLACE_EXTR_FAN (20487)
-        if bytes.fromhex("0200f500f700") == response:
-            LOGGER.debug("fireplace extract fan speed set: expected response received")
-        else:
-            LOGGER.warning(
-                "fireplace extract fan speed set: unexpected response from device"
-            )
+        self._check_write_response(response, "fireplace extract fan speed set")
 
     async def setFireplaceSupplyFanSpeed(self, speed: int) -> None:
         speed = self.checkFanSpeedLimit(speed)
         response = await self._exchangeData(
             self._build_write_command((0x5008, speed))
         )  # A_CYC_FIREPLACE_SUPP_FAN (20488)
-        if bytes.fromhex("0200f500f700") == response:
-            LOGGER.debug("fireplace supply fan speed set: expected response received")
-        else:
-            LOGGER.warning(
-                "fireplace supply fan speed set: unexpected response from device"
-            )
+        self._check_write_response(response, "fireplace supply fan speed set")
 
     async def setExtraExtractFanSpeed(self, speed: int) -> None:
         speed = self.checkFanSpeedLimit(speed)
         response = await self._exchangeData(
             self._build_write_command((0x500E, speed))
         )  # A_CYC_EXTRA_EXTR_FAN (20494)
-        if bytes.fromhex("0200f500f700") == response:
-            LOGGER.debug("extra extract fan speed set: expected response received")
-        else:
-            LOGGER.warning(
-                "extra extract fan speed set: unexpected response from device"
-            )
+        self._check_write_response(response, "extra extract fan speed set")
 
     async def setExtraSupplyFanSpeed(self, speed: int) -> None:
         speed = self.checkFanSpeedLimit(speed)
         response = await self._exchangeData(
             self._build_write_command((0x500F, speed))
         )  # A_CYC_EXTRA_SUPP_FAN (20495)
-        if bytes.fromhex("0200f500f700") == response:
-            LOGGER.debug("extra supply fan speed set: expected response received")
-        else:
-            LOGGER.warning(
-                "extra supply fan speed set: unexpected response from device"
-            )
+        self._check_write_response(response, "extra supply fan speed set")
 
     async def setExtraModeDuration(self, t: datetime.time) -> None:
         duration = max(1, min(0x5A0, t.hour * 60 + t.minute))
         response = await self._exchangeData(
             self._build_write_command((0x5010, duration))
         )  # A_CYC_EXTRA_TIME (20496)
-        if bytes.fromhex("0200f500f700") == response:
-            LOGGER.debug("extra mode duration set: expected response received")
-        else:
-            LOGGER.warning("extra mode duration set: unexpected response from device")
+        self._check_write_response(response, "extra mode duration set")
 
     async def setFireplaceModeDuration(self, t: datetime.time) -> None:
         duration = max(1, min(0x5A0, t.hour * 60 + t.minute))
         response = await self._exchangeData(
             self._build_write_command((0x5041, duration))
         )  # A_CYC_FIREPLACE_TIME (20545)
-        if bytes.fromhex("0200f500f700") == response:
-            LOGGER.debug("fireplace mode duration set: expected response received")
-        else:
-            LOGGER.warning(
-                "fireplace mode duration set: unexpected response from device"
-            )
+        self._check_write_response(response, "fireplace mode duration set")
 
     async def setWeeklyTimerEnabled(self, enabled: bool) -> None:
         response = await self._exchangeData(
             self._build_write_command((0x1207, int(enabled)))
         )  # A_CYC_WEEKLY_TIMER_ENABLED (4615)
-        if bytes.fromhex("0200f500f700") == response:
-            LOGGER.debug("weekly timer set: expected response received")
-        else:
-            LOGGER.warning("weekly timer set: unexpected response from device")
+        self._check_write_response(response, "weekly timer set")
 
     async def _setControlFlag(self, register: int, enabled: bool) -> None:
         response = await self._exchangeData(
             self._build_write_command((register, int(enabled)))
         )
-        if bytes.fromhex("0200f500f700") == response:
-            LOGGER.debug("control flag set: expected response received")
-        else:
-            LOGGER.warning("control flag set: unexpected response from device")
+        self._check_write_response(response, "control flag set")
 
     async def setRhControlHome(self, enabled: bool) -> None:
         await self._setControlFlag(
@@ -577,10 +539,7 @@ class EasyControls3Instance:
 
         request = bytes.fromhex(requestData)
         response = await self._exchangeData(request)
-        if bytes.fromhex("0200f500f700") == response:
-            LOGGER.debug("device power: expected response received")
-        else:
-            LOGGER.warning("device power: unexpected response from device")
+        self._check_write_response(response, "device power")
 
     @property
     def url(self) -> str:
