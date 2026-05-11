@@ -7,6 +7,7 @@ from homeassistant.const import (
     PERCENTAGE,
     UnitOfTemperature,
     CONCENTRATION_PARTS_PER_MILLION,
+    UnitOfTime,
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
@@ -23,20 +24,39 @@ async def async_setup_entry(
 ) -> None:
     coordinator: EasyControls3Coordinator = hass.data[DOMAIN][config_entry.entry_id]
 
-    entities = [
+    entities: list[EasyControls3BaseEntity] = [
         TemperatureSensor(coordinator, "OutsideTemperature", "Outside Temperature", "OutsideTemperature"),
         TemperatureSensor(coordinator, "SupplyTemperature", "Supply Temperature", "SupplyTemperature"),
         TemperatureSensor(coordinator, "IndoorTemperature", "Indoor Temperature", "IndoorTemperature"),
         TemperatureSensor(coordinator, "ExhaustTemperature", "Exhaust Temperature", "ExhaustTemperature"),
+        TemperatureSensor(coordinator, "HomeAirTempTarget", "Home Air Temp Target", "HomeAirTempTarget"),
+        TemperatureSensor(coordinator, "AwayAirTempTarget", "Away Air Temp Target", "AwayAirTempTarget"),
+        TemperatureSensor(coordinator, "BoostAirTempTarget", "Boost Air Temp Target", "BoostAirTempTarget"),
+        TemperatureSensor(coordinator, "ExtraAirTempTarget", "Extra Air Temp Target", "ExtraAirTempTarget"),
+        TemperatureSensor(coordinator, "FireplaceAirTempTarget", "Fireplace Air Temp Target", "FireplaceAirTempTarget"),
         HumiditySensor(coordinator),
         CurrentFanSpeed(coordinator),
+        ExtractFanRPMSensor(coordinator),
+        SupplyFanRPMSensor(coordinator),
+        CellStateSensor(coordinator),
         FilterChanged(coordinator),
         FilterDue(coordinator),
+        FilterRemainingDaysSensor(coordinator),
+        TotalUptimeYearsSensor(coordinator),
+        TotalUptimeHoursSensor(coordinator),
+        CurrentUptimeHoursSensor(coordinator),
         HeatRecoveryEfficiency(coordinator),
     ]
 
-    if coordinator.data.CO2Value != 0xFFFF:  # only add CO2 sensor if it is available
-        entities.append(CO2Sensor(coordinator))
+    for i in range(6):
+        if coordinator.data.rhSensor(i) is not None:
+            entities.append(RHSensor(coordinator, i))
+    for i in range(6):
+        if coordinator.data.co2Sensor(i) is not None:
+            entities.append(CO2Sensor(coordinator, i))
+    for i in range(4):
+        if coordinator.data.vocSensor(i) is not None:
+            entities.append(VOCSensor(coordinator, i))
 
     async_add_entities(entities)
 
@@ -80,24 +100,67 @@ class HumiditySensor(EasyControls3BaseEntity, SensorEntity):
         return self._device.AirRH
 
 
+class RHSensor(EasyControls3BaseEntity, SensorEntity):
+    device_class = SensorDeviceClass.HUMIDITY
+    native_unit_of_measurement = PERCENTAGE
+    state_class = SensorStateClass.MEASUREMENT
+    suggested_display_precision = 1
+
+    def __init__(self, coordinator: EasyControls3Coordinator, index: int) -> None:
+        super().__init__(coordinator)
+        self._index = index
+        self._attr_unique_id = f"{self._device.serialNR}_rhSensor_{index}"
+        self._attr_name = f"{self._device.deviceModel} RH Sensor {index}"
+
+    @property
+    def native_value(self):
+        return self._device.rhSensor(self._index)
+
+    @property
+    def available(self) -> bool:
+        return super().available and self._device.rhSensor(self._index) is not None
+
+
 class CO2Sensor(EasyControls3BaseEntity, SensorEntity):
     device_class = SensorDeviceClass.CO2
     native_unit_of_measurement = CONCENTRATION_PARTS_PER_MILLION
     state_class = SensorStateClass.MEASUREMENT
     suggested_display_precision = 0
 
-    def __init__(self, coordinator: EasyControls3Coordinator) -> None:
+    def __init__(self, coordinator: EasyControls3Coordinator, index: int) -> None:
         super().__init__(coordinator)
-        self._attr_unique_id = f"{self._device.serialNR}_CO2Value"
-        self._attr_name = f"{self._device.deviceModel} CO2 Value"
+        self._index = index
+        self._attr_unique_id = f"{self._device.serialNR}_co2Sensor_{index}"
+        self._attr_name = f"{self._device.deviceModel} CO2 Sensor {index}"
 
     @property
     def native_value(self):
-        return self._device.CO2Value
+        return self._device.co2Sensor(self._index)
 
     @property
     def available(self) -> bool:
-        return super().available and self._device.CO2Value != 0xFFFF
+        return super().available and self._device.co2Sensor(self._index) is not None
+
+
+class VOCSensor(EasyControls3BaseEntity, SensorEntity):
+    device_class = SensorDeviceClass.VOLATILE_ORGANIC_COMPOUNDS_PARTS
+    native_unit_of_measurement = CONCENTRATION_PARTS_PER_MILLION
+    state_class = SensorStateClass.MEASUREMENT
+    suggested_display_precision = 0
+
+    def __init__(self, coordinator: EasyControls3Coordinator, index: int) -> None:
+        super().__init__(coordinator)
+        self._index = index
+        self._attr_unique_id = f"{self._device.serialNR}_vocSensor_{index}"
+        self._attr_name = f"{self._device.deviceModel} VOC Sensor {index}"
+
+    @property
+    def native_value(self):
+        return self._device.vocSensor(self._index)
+
+    @property
+    def available(self) -> bool:
+        return super().available and self._device.vocSensor(self._index) is not None
 
 
 class CurrentFanSpeed(EasyControls3BaseEntity, SensorEntity):
@@ -117,6 +180,60 @@ class CurrentFanSpeed(EasyControls3BaseEntity, SensorEntity):
     @property
     def icon(self) -> str:
         return "mdi:fan"
+
+
+class ExtractFanRPMSensor(EasyControls3BaseEntity, SensorEntity):
+    native_unit_of_measurement = "RPM"
+    state_class = SensorStateClass.MEASUREMENT
+    suggested_display_precision = 0
+
+    def __init__(self, coordinator: EasyControls3Coordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{self._device.serialNR}_ExtractFanRPM"
+        self._attr_name = f"{self._device.deviceModel} Extract Fan RPM"
+
+    @property
+    def native_value(self):
+        return self._device.ExtractFanRPM
+
+    @property
+    def icon(self) -> str:
+        return "mdi:fan"
+
+
+class SupplyFanRPMSensor(EasyControls3BaseEntity, SensorEntity):
+    native_unit_of_measurement = "RPM"
+    state_class = SensorStateClass.MEASUREMENT
+    suggested_display_precision = 0
+
+    def __init__(self, coordinator: EasyControls3Coordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{self._device.serialNR}_SupplyFanRPM"
+        self._attr_name = f"{self._device.deviceModel} Supply Fan RPM"
+
+    @property
+    def native_value(self):
+        return self._device.SupplyFanRPM
+
+    @property
+    def icon(self) -> str:
+        return "mdi:fan"
+
+
+class CellStateSensor(EasyControls3BaseEntity, SensorEntity):
+    def __init__(self, coordinator: EasyControls3Coordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{self._device.serialNR}_CellState"
+        self._attr_name = f"{self._device.deviceModel} Cell State"
+
+    @property
+    def native_value(self) -> str | None:
+        state = self._device.CellState
+        return state.name if state is not None else None
+
+    @property
+    def icon(self) -> str:
+        return "mdi:heat-wave"
 
 
 class FilterChanged(EasyControls3BaseEntity, SensorEntity):
@@ -151,6 +268,83 @@ class FilterDue(EasyControls3BaseEntity, SensorEntity):
     @property
     def icon(self) -> str:
         return "mdi:calendar-alert-outline"
+
+
+class FilterRemainingDaysSensor(EasyControls3BaseEntity, SensorEntity):
+    device_class = SensorDeviceClass.DURATION
+    native_unit_of_measurement = UnitOfTime.DAYS
+    state_class = SensorStateClass.MEASUREMENT
+    suggested_display_precision = 0
+
+    def __init__(self, coordinator: EasyControls3Coordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{self._device.serialNR}_FilterRemainingDays"
+        self._attr_name = f"{self._device.deviceModel} Filter Remaining Days"
+
+    @property
+    def native_value(self):
+        return self._device.FilterRemainingDays
+
+    @property
+    def icon(self) -> str:
+        return "mdi:calendar-clock"
+
+
+class TotalUptimeYearsSensor(EasyControls3BaseEntity, SensorEntity):
+    native_unit_of_measurement = UnitOfTime.YEARS
+    state_class = SensorStateClass.TOTAL_INCREASING
+    suggested_display_precision = 0
+
+    def __init__(self, coordinator: EasyControls3Coordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{self._device.serialNR}_TotalUptimeYears"
+        self._attr_name = f"{self._device.deviceModel} Total Uptime Years"
+
+    @property
+    def native_value(self):
+        return self._device.TotalUptimeYears
+
+    @property
+    def icon(self) -> str:
+        return "mdi:timer-outline"
+
+
+class TotalUptimeHoursSensor(EasyControls3BaseEntity, SensorEntity):
+    native_unit_of_measurement = UnitOfTime.HOURS
+    state_class = SensorStateClass.TOTAL_INCREASING
+    suggested_display_precision = 0
+
+    def __init__(self, coordinator: EasyControls3Coordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{self._device.serialNR}_TotalUptimeHours"
+        self._attr_name = f"{self._device.deviceModel} Total Uptime Hours"
+
+    @property
+    def native_value(self):
+        return self._device.TotalUptimeHours
+
+    @property
+    def icon(self) -> str:
+        return "mdi:timer-outline"
+
+
+class CurrentUptimeHoursSensor(EasyControls3BaseEntity, SensorEntity):
+    native_unit_of_measurement = UnitOfTime.HOURS
+    state_class = SensorStateClass.MEASUREMENT
+    suggested_display_precision = 0
+
+    def __init__(self, coordinator: EasyControls3Coordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{self._device.serialNR}_CurrentUptimeHours"
+        self._attr_name = f"{self._device.deviceModel} Current Uptime Hours"
+
+    @property
+    def native_value(self):
+        return self._device.CurrentUptimeHours
+
+    @property
+    def icon(self) -> str:
+        return "mdi:timer-outline"
 
 
 class HeatRecoveryEfficiency(EasyControls3BaseEntity, SensorEntity):

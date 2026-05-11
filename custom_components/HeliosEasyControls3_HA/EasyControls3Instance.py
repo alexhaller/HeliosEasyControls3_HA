@@ -7,7 +7,7 @@ from dateutil.relativedelta import relativedelta
 from websockets.asyncio.client import connect
 
 from .deviceList import deviceInfo
-from .KWLStates import KWLState
+from .KWLStates import CellState, KWLState
 
 LOGGER = logging.getLogger(__name__)
 
@@ -33,8 +33,31 @@ class EasyControls3Instance:
         self._filterInterval: int | None = None
         self._filterChanged: datetime.date | None = None
         self._filterDue: datetime.date | None = None
-        self._CO2Value: int | None = None
         self._isOn: bool | None = None
+        # Fan RPM
+        self._extractFanRPM: int | None = None
+        self._supplyFanRPM: int | None = None
+        # Cell / system state
+        self._cellState: CellState | None = None
+        self._defrosting: bool | None = None
+        self._weeklyTimerEnabled: bool | None = None
+        self._emergencyStopActivated: bool | None = None
+        self._bypassOpen: bool | None = None
+        # Uptime & filter
+        self._totalUptimeYears: int | None = None
+        self._totalUptimeHours: int | None = None
+        self._currentUptimeHours: int | None = None
+        self._filterRemainingDays: int | None = None
+        # Temperature targets (read-only)
+        self._homeAirTempTarget: float | None = None
+        self._awayAirTempTarget: float | None = None
+        self._boostAirTempTarget: float | None = None
+        self._extraAirTempTarget: float | None = None
+        self._fireplaceAirTempTarget: float | None = None
+        # Sensor arrays (None = not present / 0xFFFF)
+        self._rhSensors: list[int | None] = [None] * 6
+        self._co2Sensors: list[int | None] = [None] * 6
+        self._vocSensors: list[int | None] = [None] * 4
 
     async def _exchangeData(self, request: bytes) -> bytes:
         async with self._lock, connect(self._url) as websocket:
@@ -50,7 +73,13 @@ class EasyControls3Instance:
         self._parseData(response)
 
     def _parseData(self, data: bytes) -> None:
-        # Binary protocol: KWL device responds with structured data at specific byte offsets
+        # Binary protocol: KWL device responds with structured data at specific byte offsets.
+        # Offset formula: buffer_offset = range_buffer_start + (register - range_register_start)
+        # Byte access: data[buffer_offset * 2] / data[buffer_offset * 2 + 1]
+        # Verified ranges: g_cyclone_hw_state (buf 63, reg 4352), g_cyclone_sw_state (buf 106, reg 4608)
+
+        def read_word(offset: int) -> int:
+            return data[offset * 2] * 256 + data[offset * 2 + 1]
 
         # Device identification (offsets 14-17)
         self._deviceModel = deviceInfo["device_model_data"][data[17 * 2 + 1]]
@@ -89,7 +118,7 @@ class EasyControls3Instance:
         self._IndoorTemperature = to_celsius(65)
         self._ExhaustTemperature = to_celsius(66)
 
-        # Humidity (offset 74)
+        # Humidity (offset 74) — A_CYC_RH_VALUE (4363)
         self._AirRH = data[74 * 2 + 1]
 
         # Filter status (offsets 239, 248-250)
@@ -112,11 +141,48 @@ class EasyControls3Instance:
             intensivDurationHours, intensivDurationMinutes
         )
 
-        # Device power state (offset 217): 0=on, !=0=off
+        # Device power state (offset 217): 0=on, !=0=off — A_CYC_MODE (4610)
         self._isOn = bool(data[217] == 0)
 
-        # CO2 sensor value (offsets 182-183)
-        self._CO2Value = int(data[182]) << 8 | int(data[183])
+        # Fan RPM — g_cyclone_hw_state (buf_start=63, reg_start=4352)
+        self._extractFanRPM = read_word(72)   # A_CYC_EXTR_FAN_SPEED (4361)
+        self._supplyFanRPM = read_word(73)    # A_CYC_SUPP_FAN_SPEED (4362)
+
+        # Software state — g_cyclone_sw_state (buf_start=106, reg_start=4608)
+        self._defrosting = bool(data[109 * 2 + 1])           # A_CYC_DEFROSTING (4611)
+        self._weeklyTimerEnabled = bool(data[113 * 2 + 1])   # A_CYC_WEEKLY_TIMER_ENABLED (4615)
+        cell_state_raw = data[114 * 2 + 1]                   # A_CYC_CELL_STATE (4616)
+        self._cellState = CellState(cell_state_raw) if cell_state_raw < 4 else None
+        self._totalUptimeYears = read_word(115)               # A_CYC_TOTAL_UP_TIME_YEARS (4617)
+        self._totalUptimeHours = read_word(116)               # A_CYC_TOTAL_UP_TIME_HOURS (4618)
+        self._currentUptimeHours = read_word(117)             # A_CYC_CURRENT_UP_TIME_HOURS (4619)
+        self._filterRemainingDays = read_word(118)            # A_CYC_REMAINING_TIME_FOR_FILTER (4620)
+        self._emergencyStopActivated = bool(data[122 * 2 + 1])  # A_CYC_EMERGENCY_STOP_IS_ACTIVATED (4624)
+
+        # Output — g_cyclone_output (buf_start=138, reg_start=4864)
+        self._bypassOpen = bool(data[144 * 2 + 1])           # A_CYC_IO_BYPASS (4870)
+
+        # Temperature targets — g_cyclone_settings (buf_start=182, reg_start=20480)
+        self._extraAirTempTarget = to_celsius(195)            # A_CYC_EXTRA_AIR_TEMP_TARGET (20493)
+        self._fireplaceAirTempTarget = to_celsius(199)        # A_CYC_FIREPLACE_AIR_TEMP_TARGET (20497)
+        self._awayAirTempTarget = to_celsius(204)             # A_CYC_AWAY_AIR_TEMP_TARGET (20502)
+        self._homeAirTempTarget = to_celsius(210)             # A_CYC_HOME_AIR_TEMP_TARGET (20508)
+        self._boostAirTempTarget = to_celsius(216)            # A_CYC_BOOST_AIR_TEMP_TARGET (20514)
+
+        # RH sensors 0-5 — A_CYC_RH_SENSOR_0..5 (4373..4378), buf 84..89
+        for i in range(6):
+            v = read_word(84 + i)
+            self._rhSensors[i] = None if v == 0xFFFF else v
+
+        # CO2 sensors 0-5 — A_CYC_CO2_SENSOR_0..5 (4379..4384), buf 90..95
+        for i in range(6):
+            v = read_word(90 + i)
+            self._co2Sensors[i] = None if v == 0xFFFF else v
+
+        # VOC sensors 0-3 — A_CYC_VOC_SENSOR_0..3 (4391..4394), buf 102..105
+        for i in range(4):
+            v = read_word(102 + i)
+            self._vocSensors[i] = None if v == 0xFFFF else v
 
     async def switchMode(self, wantedKWLState: KWLState) -> None:
         # Binary protocol commands for mode switching
@@ -175,12 +241,8 @@ class EasyControls3Instance:
 
     async def setFanSpeed(self, requestedFanSpeed: int, mode: KWLState) -> None:
         requestedFanSpeed = self.checkFanSpeedLimit(requestedFanSpeed)
-        requestedSpeedPlainString = self.createFanSpeedPlainRequestString(
-            requestedFanSpeed
-        )
-        requestedSpeedModdedString = self.createFanSpeedModdedRequestString(
-            requestedFanSpeed, mode
-        )
+        requestedSpeedPlainString = self.createFanSpeedPlainRequestString(requestedFanSpeed)
+        requestedSpeedModdedString = self.createFanSpeedModdedRequestString(requestedFanSpeed, mode)
 
         modeIdentifier = "21"  # Intensive
 
@@ -336,5 +398,74 @@ class EasyControls3Instance:
         return self._isOn
 
     @property
-    def CO2Value(self) -> int | None:
-        return self._CO2Value
+    def ExtractFanRPM(self) -> int | None:
+        return self._extractFanRPM
+
+    @property
+    def SupplyFanRPM(self) -> int | None:
+        return self._supplyFanRPM
+
+    @property
+    def CellState(self) -> CellState | None:
+        return self._cellState
+
+    @property
+    def Defrosting(self) -> bool | None:
+        return self._defrosting
+
+    @property
+    def WeeklyTimerEnabled(self) -> bool | None:
+        return self._weeklyTimerEnabled
+
+    @property
+    def EmergencyStopActivated(self) -> bool | None:
+        return self._emergencyStopActivated
+
+    @property
+    def BypassOpen(self) -> bool | None:
+        return self._bypassOpen
+
+    @property
+    def TotalUptimeYears(self) -> int | None:
+        return self._totalUptimeYears
+
+    @property
+    def TotalUptimeHours(self) -> int | None:
+        return self._totalUptimeHours
+
+    @property
+    def CurrentUptimeHours(self) -> int | None:
+        return self._currentUptimeHours
+
+    @property
+    def FilterRemainingDays(self) -> int | None:
+        return self._filterRemainingDays
+
+    @property
+    def HomeAirTempTarget(self) -> float | None:
+        return self._homeAirTempTarget
+
+    @property
+    def AwayAirTempTarget(self) -> float | None:
+        return self._awayAirTempTarget
+
+    @property
+    def BoostAirTempTarget(self) -> float | None:
+        return self._boostAirTempTarget
+
+    @property
+    def ExtraAirTempTarget(self) -> float | None:
+        return self._extraAirTempTarget
+
+    @property
+    def FireplaceAirTempTarget(self) -> float | None:
+        return self._fireplaceAirTempTarget
+
+    def rhSensor(self, index: int) -> int | None:
+        return self._rhSensors[index]
+
+    def co2Sensor(self, index: int) -> int | None:
+        return self._co2Sensors[index]
+
+    def vocSensor(self, index: int) -> int | None:
+        return self._vocSensors[index]
