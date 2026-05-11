@@ -24,14 +24,22 @@ jobs:
           category: integration
 
   lint:
-    name: ruff + mypy
+    name: ruff + mypy + pip-audit
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-      - run: pip install ruff mypy homeassistant types-python-dateutil
+      - run: pip install ruff mypy homeassistant types-python-dateutil pip-audit
       - run: ruff check .
       - run: ruff format --check .
       - run: mypy custom_components/
+      - name: pip-audit (manifest.json requirements)
+        run: |
+          python -c "
+          import json
+          reqs = json.load(open('custom_components/HeliosEasyControls3_HA/manifest.json'))['requirements']
+          open('_reqs_tmp.txt', 'w').write('\n'.join(reqs))
+          "
+          pip-audit -r _reqs_tmp.txt

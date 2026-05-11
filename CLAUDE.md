@@ -14,14 +14,20 @@ Key files:
 
 ## Code quality
 
-Run all four checks after **every** change and after **every** code review. Fix all reported issues before considering a change complete.
+Run all checks after **every** change and after **every** code review. Fix all reported issues before considering a change complete.
 
 | Tool | Command | What it checks |
 |---|---|---|
 | ruff lint | `ruff check .` | Linting, import order, style rules |
 | ruff format | `ruff format --check .` | Code formatting (run `ruff format .` to auto-fix) |
 | mypy | `mypy custom_components/` | Static type checking |
+| pip-audit | see below | Known CVEs in dependencies |
 | hassfest | CI only (`.github/workflows/validate.yml`) | HA manifest, strings, platform structure |
+
+**pip-audit** against `manifest.json` requirements (Windows):
+```powershell
+python -c "import json; reqs=json.load(open('custom_components/HeliosEasyControls3_HA/manifest.json'))['requirements']; open('_reqs_tmp.txt','w').write('\n'.join(reqs))" && pip-audit -r _reqs_tmp.txt && del _reqs_tmp.txt
+```
 
 `hassfest` runs automatically on every push via GitHub Actions — it cannot be run locally without cloning the HA core repository.
 
