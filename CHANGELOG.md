@@ -1,3 +1,9 @@
+## [1.5.0](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v1.4.2...v1.5.0) (2026-05-12)
+
+### Features
+
+* add brand icon placeholder (256x256) ([d297c97](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/d297c9741a7591ca361d4e7f6ed007b21660375a))
+
 ## [1.4.2](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v1.4.1...v1.4.2) (2026-05-12)
 
 ### Bug Fixes
