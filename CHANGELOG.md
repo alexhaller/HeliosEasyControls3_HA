@@ -1,3 +1,9 @@
+## [1.7.0](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v1.6.0...v1.7.0) (2026-05-12)
+
+### Features
+
+* categorize entities, rename Individual/Intensive, add new settings ([6c3b42a](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/6c3b42a9f1f8edc512d4c44433b070893fd8cc43))
+
 ## [1.6.0](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v1.5.0...v1.6.0) (2026-05-12)
 
 ### Features
