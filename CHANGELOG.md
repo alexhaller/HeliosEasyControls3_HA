@@ -1,3 +1,9 @@
+## [1.4.1](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v1.4.0...v1.4.1) (2026-05-12)
+
+### Bug Fixes
+
+* resolve CI validation errors ([cf811af](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/cf811afc5511e15afb438b3698237557bb70cb5c))
+
 ## [1.4.0](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v1.3.0...v1.4.0) (2026-05-11)
 
 ### Features
