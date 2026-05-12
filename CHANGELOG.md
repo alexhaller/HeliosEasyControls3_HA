@@ -1,3 +1,9 @@
+## [1.6.0](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v1.5.0...v1.6.0) (2026-05-12)
+
+### Features
+
+* replace placeholder with fan ventilation icon ([53e3ec0](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/53e3ec0fdfd4fb43c2330b4ffedf5f0131a78053))
+
 ## [1.5.0](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v1.4.2...v1.5.0) (2026-05-12)
 
 ### Features
