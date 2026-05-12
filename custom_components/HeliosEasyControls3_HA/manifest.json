@@ -4,8 +4,8 @@
   "dependencies": [],
   "documentation": "https://github.com/alexhaller/HeliosEasyControls3_HA",
   "domain": "HeliosEasyControls3_HA",
-  "homeassistant": "2026.1",
   "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/alexhaller/HeliosEasyControls3_HA/issues",
   "name": "Helios easyControls 3.0 - HA",
   "requirements": ["websockets>=16.0", "python-dateutil>=2.9.0.post0"],
   "version": "1.4.0"

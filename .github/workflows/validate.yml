@@ -31,7 +31,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-      - run: pip install ruff mypy homeassistant types-python-dateutil pip-audit
+      - run: pip install ruff mypy homeassistant "websockets>=16.0" types-python-dateutil pip-audit
       - run: ruff check .
       - run: ruff format --check .
       - run: mypy custom_components/
