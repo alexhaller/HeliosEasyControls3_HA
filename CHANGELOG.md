@@ -1,3 +1,9 @@
+## [1.4.2](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v1.4.1...v1.4.2) (2026-05-12)
+
+### Bug Fixes
+
+* sort manifest.json keys per hassfest requirements ([f26d40c](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/f26d40c89bd6765e3cc4ad8dc73ab8b5daadd778))
+
 ## [1.4.1](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v1.4.0...v1.4.1) (2026-05-12)
 
 ### Bug Fixes
