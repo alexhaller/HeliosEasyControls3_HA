@@ -3,6 +3,7 @@ from datetime import time
 from homeassistant.components.time import TimeEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import EasyControls3BaseEntity, EasyControls3Coordinator
@@ -25,6 +26,8 @@ async def async_setup_entry(
 
 
 class IntensiveDuration(EasyControls3BaseEntity, TimeEntity):
+    entity_category = EntityCategory.CONFIG
+
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_intensiveDuration"
@@ -40,6 +43,8 @@ class IntensiveDuration(EasyControls3BaseEntity, TimeEntity):
 
 
 class ExtraModeDuration(EasyControls3BaseEntity, TimeEntity):
+    entity_category = EntityCategory.CONFIG
+
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_extraModeDuration"
@@ -55,10 +60,12 @@ class ExtraModeDuration(EasyControls3BaseEntity, TimeEntity):
 
 
 class FireplaceModeDuration(EasyControls3BaseEntity, TimeEntity):
+    entity_category = EntityCategory.CONFIG
+
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_fireplaceModeDuration"
-        self._attr_name = f"{self._device.deviceModel} Fireplace Mode Duration"
+        self._attr_name = f"{self._device.deviceModel} Individual Mode Duration"
 
     @property
     def native_value(self) -> time | None:

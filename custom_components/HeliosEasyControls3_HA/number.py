@@ -1,7 +1,12 @@
 from homeassistant.components.number import NumberDeviceClass, NumberEntity
-from homeassistant.const import PERCENTAGE, UnitOfTemperature
+from homeassistant.const import (
+    CONCENTRATION_PARTS_PER_MILLION,
+    PERCENTAGE,
+    UnitOfTemperature,
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import EasyControls3BaseEntity, EasyControls3Coordinator
@@ -42,14 +47,14 @@ async def async_setup_entry(
             ModeFanSpeedNumber(
                 coordinator,
                 "fireplaceExtractFanSpeed",
-                "Fireplace Extract Fan Speed",
+                "Individual Extract Fan Speed",
                 "FireplaceExtractFanSpeed",
                 "setFireplaceExtractFanSpeed",
             ),
             ModeFanSpeedNumber(
                 coordinator,
                 "fireplaceSupplyFanSpeed",
-                "Fireplace Supply Fan Speed",
+                "Individual Supply Fan Speed",
                 "FireplaceSupplyFanSpeed",
                 "setFireplaceSupplyFanSpeed",
             ),
@@ -84,7 +89,7 @@ async def async_setup_entry(
             AirTempTargetNumber(
                 coordinator,
                 "boostAirTempTarget",
-                "Boost Air Temp Target",
+                "Intensive Air Temp Target",
                 "BoostAirTempTarget",
                 "setBoostAirTempTarget",
             ),
@@ -98,10 +103,13 @@ async def async_setup_entry(
             AirTempTargetNumber(
                 coordinator,
                 "fireplaceAirTempTarget",
-                "Fireplace Air Temp Target",
+                "Individual Air Temp Target",
                 "FireplaceAirTempTarget",
                 "setFireplaceAirTempTarget",
             ),
+            RHLimitNumber(coordinator),
+            CO2LimitNumber(coordinator),
+            BypassMaxOutdoorTempNumber(coordinator),
         ]
     )
 
@@ -111,6 +119,7 @@ class FanSpeedNumber(EasyControls3BaseEntity, NumberEntity):
     native_max_value = 100.0
     native_step = 1.0
     native_unit_of_measurement = PERCENTAGE
+    entity_category = EntityCategory.CONFIG
 
     def __init__(
         self,
@@ -144,6 +153,7 @@ class ModeFanSpeedNumber(EasyControls3BaseEntity, NumberEntity):
     native_max_value = 100.0
     native_step = 1.0
     native_unit_of_measurement = PERCENTAGE
+    entity_category = EntityCategory.CONFIG
 
     def __init__(
         self,
@@ -178,6 +188,7 @@ class AirTempTargetNumber(EasyControls3BaseEntity, NumberEntity):
     native_min_value = -10.0
     native_max_value = 40.0
     native_step = 1.0
+    entity_category = EntityCategory.CONFIG
 
     def __init__(
         self,
@@ -199,4 +210,68 @@ class AirTempTargetNumber(EasyControls3BaseEntity, NumberEntity):
 
     async def async_set_native_value(self, value: float) -> None:
         await getattr(self._device, self._setter_name)(value)
+        await self.coordinator.async_request_refresh()
+
+
+class RHLimitNumber(EasyControls3BaseEntity, NumberEntity):
+    native_min_value = 0.0
+    native_max_value = 100.0
+    native_step = 1.0
+    native_unit_of_measurement = PERCENTAGE
+    entity_category = EntityCategory.CONFIG
+
+    def __init__(self, coordinator: EasyControls3Coordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{self._device.serialNR}_maxRH"
+        self._attr_name = f"{self._device.deviceModel} RH Limit"
+
+    @property
+    def native_value(self):
+        return self._device.maxRH
+
+    async def async_set_native_value(self, value: float) -> None:
+        await self._device.setMaxRH(int(value))
+        await self.coordinator.async_request_refresh()
+
+
+class CO2LimitNumber(EasyControls3BaseEntity, NumberEntity):
+    native_min_value = 400.0
+    native_max_value = 2000.0
+    native_step = 50.0
+    native_unit_of_measurement = CONCENTRATION_PARTS_PER_MILLION
+    entity_category = EntityCategory.CONFIG
+
+    def __init__(self, coordinator: EasyControls3Coordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{self._device.serialNR}_maxCO2"
+        self._attr_name = f"{self._device.deviceModel} CO2/VOC Limit"
+
+    @property
+    def native_value(self):
+        return self._device.maxCO2
+
+    async def async_set_native_value(self, value: float) -> None:
+        await self._device.setMaxCO2(int(value))
+        await self.coordinator.async_request_refresh()
+
+
+class BypassMaxOutdoorTempNumber(EasyControls3BaseEntity, NumberEntity):
+    device_class = NumberDeviceClass.TEMPERATURE
+    native_unit_of_measurement = UnitOfTemperature.CELSIUS
+    native_min_value = -10.0
+    native_max_value = 40.0
+    native_step = 1.0
+    entity_category = EntityCategory.CONFIG
+
+    def __init__(self, coordinator: EasyControls3Coordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{self._device.serialNR}_bypassMaxOutdoorTemp"
+        self._attr_name = f"{self._device.deviceModel} Bypass Max Outdoor Temperature"
+
+    @property
+    def native_value(self):
+        return self._device.bypassMaxOutdoorTemp
+
+    async def async_set_native_value(self, value: float) -> None:
+        await self._device.setBypassMaxOutdoorTemp(value)
         await self.coordinator.async_request_refresh()

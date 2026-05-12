@@ -80,6 +80,16 @@ class EasyControls3Instance:
         self._extraSupplyFanSpeed: int | None = None
         self._extraModeDuration: datetime.time | None = None
         self._fireplaceModeDuration: datetime.time | None = None
+        # New settings
+        self._supplyHeatingAdjustMode: int | None = None
+        self._maxRH: int | None = None
+        self._maxCO2: int | None = None
+        self._bypassSetting: bool | None = None
+        self._steplessBypass: bool | None = None
+        self._bypassMaxOutdoorTemp: float | None = None
+        self._coolHeatRecoveryEnabled: bool | None = None
+        self._coolHeatRecovery: bool | None = None
+        self._heatExchanger: int | None = None
 
     _WRITE_OK: bytes = bytes.fromhex("0200f500f700")
 
@@ -274,6 +284,25 @@ class EasyControls3Instance:
         fp_min = read_word(247)  # A_CYC_FIREPLACE_TIME (20545)
         self._fireplaceModeDuration = datetime.time(fp_min // 60, fp_min % 60)
 
+        # Additional settings
+        self._supplyHeatingAdjustMode = data[
+            183 * 2 + 1
+        ]  # A_CYC_SUPPLY_HEATING_ADJUST_MODE (20481)
+        self._maxCO2 = read_word(223)  # A_CYC_MAX_CO2 (20521)
+        self._bypassMaxOutdoorTemp = to_celsius(
+            226
+        )  # A_CYC_BYPASS_MAX_OUTDOOR_TEMP (20524)
+        self._steplessBypass = bool(data[227 * 2 + 1])  # A_CYC_STEPLESS_BYPASS (20525)
+        self._maxRH = data[225 * 2 + 1]  # A_CYC_MAX_RH (20523)
+        self._coolHeatRecoveryEnabled = bool(
+            data[219 * 2 + 1]
+        )  # A_CYC_COOL_HEAT_RECOVERY_ENABLED (20517)
+        self._coolHeatRecovery = bool(
+            data[220 * 2 + 1]
+        )  # A_CYC_COOL_HEAT_RECOVERY (20518)
+        self._heatExchanger = data[222 * 2 + 1]  # A_CYC_HEAT_EXCHANGER (20520)
+        self._bypassSetting = bool(data[230 * 2 + 1])  # A_CYC_BYPASS_SETTING (20528)
+
         # RH sensors 0-5 — A_CYC_RH_SENSOR_0..5 (4373..4378), buf 84..89
         for i in range(6):
             v = read_word(84 + i)
@@ -437,14 +466,14 @@ class EasyControls3Instance:
         response = await self._exchangeData(
             self._build_write_command((0x5007, speed))
         )  # A_CYC_FIREPLACE_EXTR_FAN (20487)
-        self._check_write_response(response, "fireplace extract fan speed set")
+        self._check_write_response(response, "individual extract fan speed set")
 
     async def setFireplaceSupplyFanSpeed(self, speed: int) -> None:
         speed = self.checkFanSpeedLimit(speed)
         response = await self._exchangeData(
             self._build_write_command((0x5008, speed))
         )  # A_CYC_FIREPLACE_SUPP_FAN (20488)
-        self._check_write_response(response, "fireplace supply fan speed set")
+        self._check_write_response(response, "individual supply fan speed set")
 
     async def setExtraExtractFanSpeed(self, speed: int) -> None:
         speed = self.checkFanSpeedLimit(speed)
@@ -472,7 +501,7 @@ class EasyControls3Instance:
         response = await self._exchangeData(
             self._build_write_command((0x5041, duration))
         )  # A_CYC_FIREPLACE_TIME (20545)
-        self._check_write_response(response, "fireplace mode duration set")
+        self._check_write_response(response, "individual mode duration set")
 
     async def setWeeklyTimerEnabled(self, enabled: bool) -> None:
         response = await self._exchangeData(
@@ -748,6 +777,97 @@ class EasyControls3Instance:
     @property
     def FilterReminderEnabled(self) -> bool | None:
         return self._filterReminderEnabled
+
+    @property
+    def supplyHeatingAdjustMode(self) -> int | None:
+        return self._supplyHeatingAdjustMode
+
+    @property
+    def maxRH(self) -> int | None:
+        return self._maxRH
+
+    @property
+    def maxCO2(self) -> int | None:
+        return self._maxCO2
+
+    @property
+    def BypassSetting(self) -> bool | None:
+        return self._bypassSetting
+
+    @property
+    def SteplessBypass(self) -> bool | None:
+        return self._steplessBypass
+
+    @property
+    def bypassMaxOutdoorTemp(self) -> float | None:
+        return self._bypassMaxOutdoorTemp
+
+    @property
+    def CoolHeatRecoveryEnabled(self) -> bool | None:
+        return self._coolHeatRecoveryEnabled
+
+    @property
+    def CoolHeatRecovery(self) -> bool | None:
+        return self._coolHeatRecovery
+
+    @property
+    def heatExchanger(self) -> int | None:
+        return self._heatExchanger
+
+    @property
+    def rhSensorCount(self) -> int:
+        return sum(1 for v in self._rhSensors if v is not None)
+
+    @property
+    def co2SensorCount(self) -> int:
+        return sum(1 for v in self._co2Sensors if v is not None)
+
+    @property
+    def vocSensorCount(self) -> int:
+        return sum(1 for v in self._vocSensors if v is not None)
+
+    async def setSupplyHeatingAdjustMode(self, mode: int) -> None:
+        response = await self._exchangeData(
+            self._build_write_command((0x5001, mode))
+        )  # A_CYC_SUPPLY_HEATING_ADJUST_MODE (20481)
+        self._check_write_response(response, "supply heating adjust mode set")
+
+    async def setMaxRH(self, value: int) -> None:
+        response = await self._exchangeData(
+            self._build_write_command((0x502B, value))
+        )  # A_CYC_MAX_RH (20523)
+        self._check_write_response(response, "max RH set")
+
+    async def setMaxCO2(self, value: int) -> None:
+        response = await self._exchangeData(
+            self._build_write_command((0x5029, value))
+        )  # A_CYC_MAX_CO2 (20521)
+        self._check_write_response(response, "max CO2 set")
+
+    async def setBypassSetting(self, enabled: bool) -> None:
+        await self._setControlFlag(0x5030, enabled)  # A_CYC_BYPASS_SETTING (20528)
+
+    async def setSteplessBypass(self, enabled: bool) -> None:
+        await self._setControlFlag(0x502D, enabled)  # A_CYC_STEPLESS_BYPASS (20525)
+
+    async def setBypassMaxOutdoorTemp(self, celsius: float) -> None:
+        await self._setTemperatureTarget(
+            0x502C, celsius
+        )  # A_CYC_BYPASS_MAX_OUTDOOR_TEMP (20524)
+
+    async def setCoolHeatRecoveryEnabled(self, enabled: bool) -> None:
+        await self._setControlFlag(
+            0x5025, enabled
+        )  # A_CYC_COOL_HEAT_RECOVERY_ENABLED (20517)
+
+    async def setCoolHeatRecovery(self, enabled: bool) -> None:
+        await self._setControlFlag(0x5026, enabled)  # A_CYC_COOL_HEAT_RECOVERY (20518)
+
+    async def setHeatExchanger(self, value: int) -> None:
+        response = await self._exchangeData(
+            self._build_write_command((0x5028, value))
+        )  # A_CYC_HEAT_EXCHANGER (20520)
+        self._check_write_response(response, "heat exchanger set")
 
     def rhSensor(self, index: int) -> int | None:
         return self._rhSensors[index]

@@ -1,6 +1,7 @@
 from homeassistant.components.switch import SwitchDeviceClass, SwitchEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import EasyControls3BaseEntity, EasyControls3Coordinator
@@ -49,16 +50,44 @@ async def async_setup_entry(
             ControlSwitch(
                 coordinator,
                 "rhControlBoost",
-                "RH Control Boost",
+                "RH Control Intensive",
                 "RhControlBoost",
                 "setRhControlBoost",
             ),
             ControlSwitch(
                 coordinator,
                 "co2ControlBoost",
-                "CO2 Control Boost",
+                "CO2 Control Intensive",
                 "Co2ControlBoost",
                 "setCo2ControlBoost",
+            ),
+            ControlSwitch(
+                coordinator,
+                "bypassSetting",
+                "Bypass",
+                "BypassSetting",
+                "setBypassSetting",
+            ),
+            ControlSwitch(
+                coordinator,
+                "steplessBypass",
+                "Stepless Bypass",
+                "SteplessBypass",
+                "setSteplessBypass",
+            ),
+            ControlSwitch(
+                coordinator,
+                "coolHeatRecoveryEnabled",
+                "Cool Recovery Enabled",
+                "CoolHeatRecoveryEnabled",
+                "setCoolHeatRecoveryEnabled",
+            ),
+            ControlSwitch(
+                coordinator,
+                "coolHeatRecovery",
+                "Cool Recovery",
+                "CoolHeatRecovery",
+                "setCoolHeatRecovery",
             ),
         ]
     )
@@ -87,6 +116,7 @@ class KWLOnOffSwitch(EasyControls3BaseEntity, SwitchEntity):
 
 class ControlSwitch(EasyControls3BaseEntity, SwitchEntity):
     device_class = SwitchDeviceClass.SWITCH
+    entity_category = EntityCategory.CONFIG
 
     def __init__(
         self,
@@ -117,6 +147,7 @@ class ControlSwitch(EasyControls3BaseEntity, SwitchEntity):
 
 class FilterReminderSwitch(EasyControls3BaseEntity, SwitchEntity):
     device_class = SwitchDeviceClass.SWITCH
+    entity_category = EntityCategory.CONFIG
 
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
@@ -142,6 +173,7 @@ class FilterReminderSwitch(EasyControls3BaseEntity, SwitchEntity):
 
 class WeeklyTimerSwitch(EasyControls3BaseEntity, SwitchEntity):
     device_class = SwitchDeviceClass.SWITCH
+    entity_category = EntityCategory.CONFIG
 
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
