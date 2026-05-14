@@ -29,6 +29,7 @@ async def async_setup_entry(
 
 class DefrostingBinarySensor(EasyControls3BaseEntity, BinarySensorEntity):
     device_class = BinarySensorDeviceClass.COLD
+    _attr_icon = "mdi:snowflake"
 
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
@@ -38,10 +39,6 @@ class DefrostingBinarySensor(EasyControls3BaseEntity, BinarySensorEntity):
     @property
     def is_on(self) -> bool | None:
         return self._device.Defrosting
-
-    @property
-    def icon(self) -> str:
-        return "mdi:snowflake"
 
 
 class EmergencyStopBinarySensor(EasyControls3BaseEntity, BinarySensorEntity):
@@ -59,6 +56,7 @@ class EmergencyStopBinarySensor(EasyControls3BaseEntity, BinarySensorEntity):
 
 class BypassBinarySensor(EasyControls3BaseEntity, BinarySensorEntity):
     device_class = BinarySensorDeviceClass.OPENING
+    _attr_icon = "mdi:valve-open"
 
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
@@ -68,7 +66,3 @@ class BypassBinarySensor(EasyControls3BaseEntity, BinarySensorEntity):
     @property
     def is_on(self) -> bool | None:
         return self._device.BypassOpen
-
-    @property
-    def icon(self) -> str:
-        return "mdi:valve-open"
