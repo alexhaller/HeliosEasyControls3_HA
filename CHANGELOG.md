@@ -1,3 +1,13 @@
+## [1.8.1](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v1.8.0...v1.8.1) (2026-05-14)
+
+### Bug Fixes
+
+* restore brand/icon.png inside integration for HACS validation ([c94966e](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/c94966e1ed1db41f5c883feb2377897e9582d222))
+
+### Documentation
+
+* correct brand asset paths in CLAUDE.md ([1534e29](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/1534e29e804aae26e2659a78467a0bff661f847e))
+
 ## [1.8.0](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v1.7.0...v1.8.0) (2026-05-14)
 
 ### Features
