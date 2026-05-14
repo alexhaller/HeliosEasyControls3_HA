@@ -1,3 +1,18 @@
+## [1.8.2](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v1.8.1...v1.8.2) (2026-05-14)
+
+### Bug Fixes
+
+* enforce already_configured guard and use _attr_icon in binary sensors ([4392685](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/439268563418426a40ae83bc5fa725db9fd4299c))
+
+### Documentation
+
+* move general conventions to global ~/.claude/CLAUDE.md ([6fa61a9](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/6fa61a997fbd100e74c18d862254549f6e7585d1))
+* trim project CLAUDE.md removing notes now covered by global config ([603f1e6](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/603f1e6720daa0cb6920107a4c330c2988d6c682))
+
+### Code Refactoring
+
+* **device:** extract protocol constants and split _parseData into focused methods ([5c20375](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/5c2037547a70f625523428863a6c0a117f97c9a0))
+
 ## [1.8.1](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v1.8.0...v1.8.1) (2026-05-14)
 
 ### Bug Fixes
