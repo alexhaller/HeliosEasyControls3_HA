@@ -60,5 +60,5 @@ python -c "import json; reqs=json.load(open('custom_components/HeliosEasyControl
 
 ## Before committing
 
-- Always ask if the version needs to be adjusted.
+- Do not manually edit the `version` field in `manifest.json` — semantic-release updates it automatically on push to `main` based on conventional commit types (`feat` → minor, `fix` → patch).
 - Check for latest releases of required packages: run `pip index versions websockets` and `pip index versions python-dateutil`, then update the `>=` constraints in `manifest.json` if a newer stable version exists.
