@@ -1,7 +1,5 @@
 """EasyControls3 Home Assistant integration."""
 
-from __future__ import annotations
-
 import logging
 from datetime import timedelta
 
@@ -18,7 +16,7 @@ from homeassistant.helpers.update_coordinator import (
 from .const import DOMAIN
 from .EasyControls3Instance import EasyControls3Instance
 
-EasyControls3Coordinator = DataUpdateCoordinator[EasyControls3Instance]
+type EasyControls3Coordinator = DataUpdateCoordinator[EasyControls3Instance]
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -70,6 +68,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 class EasyControls3BaseEntity(CoordinatorEntity[EasyControls3Coordinator]):
     """Base entity for all EasyControls3 entities."""
+
+    has_entity_name = True
 
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)

@@ -17,6 +17,8 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from . import EasyControls3BaseEntity, EasyControls3Coordinator
 from .const import DOMAIN
 
+PARALLEL_UPDATES = 0
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -98,7 +100,7 @@ class TemperatureSensor(EasyControls3BaseEntity, SensorEntity):
     ) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_{unique_suffix}"
-        self._attr_name = f"{self._device.deviceModel} {name_suffix}"
+        self._attr_name = name_suffix
         self._device_attr = device_attr
 
     @property
@@ -115,7 +117,7 @@ class HumiditySensor(EasyControls3BaseEntity, SensorEntity):
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_AirRH"
-        self._attr_name = f"{self._device.deviceModel} Air Relative Humidity"
+        self._attr_name = "Air Relative Humidity"
 
     @property
     def native_value(self):
@@ -132,7 +134,7 @@ class RHSensor(EasyControls3BaseEntity, SensorEntity):
         super().__init__(coordinator)
         self._index = index
         self._attr_unique_id = f"{self._device.serialNR}_rhSensor_{index}"
-        self._attr_name = f"{self._device.deviceModel} RH Sensor {index}"
+        self._attr_name = f"RH Sensor {index}"
 
     @property
     def native_value(self):
@@ -153,7 +155,7 @@ class CO2Sensor(EasyControls3BaseEntity, SensorEntity):
         super().__init__(coordinator)
         self._index = index
         self._attr_unique_id = f"{self._device.serialNR}_co2Sensor_{index}"
-        self._attr_name = f"{self._device.deviceModel} CO2 Sensor {index}"
+        self._attr_name = f"CO2 Sensor {index}"
 
     @property
     def native_value(self):
@@ -174,7 +176,7 @@ class VOCSensor(EasyControls3BaseEntity, SensorEntity):
         super().__init__(coordinator)
         self._index = index
         self._attr_unique_id = f"{self._device.serialNR}_vocSensor_{index}"
-        self._attr_name = f"{self._device.deviceModel} VOC Sensor {index}"
+        self._attr_name = f"VOC Sensor {index}"
 
     @property
     def native_value(self):
@@ -193,7 +195,7 @@ class CurrentFanSpeed(EasyControls3BaseEntity, SensorEntity):
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_CurrentFanSpeed"
-        self._attr_name = f"{self._device.deviceModel} Current Fan Speed"
+        self._attr_name = "Current Fan Speed"
 
     @property
     def native_value(self):
@@ -212,7 +214,7 @@ class ExtractFanRPMSensor(EasyControls3BaseEntity, SensorEntity):
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_ExtractFanRPM"
-        self._attr_name = f"{self._device.deviceModel} Extract Fan RPM"
+        self._attr_name = "Extract Fan RPM"
 
     @property
     def native_value(self):
@@ -231,7 +233,7 @@ class SupplyFanRPMSensor(EasyControls3BaseEntity, SensorEntity):
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_SupplyFanRPM"
-        self._attr_name = f"{self._device.deviceModel} Supply Fan RPM"
+        self._attr_name = "Supply Fan RPM"
 
     @property
     def native_value(self):
@@ -246,7 +248,7 @@ class CellStateSensor(EasyControls3BaseEntity, SensorEntity):
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_CellState"
-        self._attr_name = f"{self._device.deviceModel} Cell State"
+        self._attr_name = "Cell State"
 
     @property
     def native_value(self) -> str | None:
@@ -265,7 +267,7 @@ class FilterChanged(EasyControls3BaseEntity, SensorEntity):
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_filterChanged"
-        self._attr_name = f"{self._device.deviceModel} Last Filter Change"
+        self._attr_name = "Last Filter Change"
 
     @property
     def native_value(self):
@@ -283,7 +285,7 @@ class FilterDue(EasyControls3BaseEntity, SensorEntity):
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_filterDue"
-        self._attr_name = f"{self._device.deviceModel} Next Filter Change"
+        self._attr_name = "Next Filter Change"
 
     @property
     def native_value(self):
@@ -304,7 +306,7 @@ class FilterRemainingDaysSensor(EasyControls3BaseEntity, SensorEntity):
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_FilterRemainingDays"
-        self._attr_name = f"{self._device.deviceModel} Filter Remaining Days"
+        self._attr_name = "Filter Remaining Days"
 
     @property
     def native_value(self):
@@ -324,7 +326,7 @@ class TotalUptimeYearsSensor(EasyControls3BaseEntity, SensorEntity):
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_TotalUptimeYears"
-        self._attr_name = f"{self._device.deviceModel} Total Uptime Years"
+        self._attr_name = "Total Uptime Years"
 
     @property
     def native_value(self):
@@ -344,7 +346,7 @@ class TotalUptimeHoursSensor(EasyControls3BaseEntity, SensorEntity):
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_TotalUptimeHours"
-        self._attr_name = f"{self._device.deviceModel} Total Uptime Hours"
+        self._attr_name = "Total Uptime Hours"
 
     @property
     def native_value(self):
@@ -364,7 +366,7 @@ class CurrentUptimeHoursSensor(EasyControls3BaseEntity, SensorEntity):
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_CurrentUptimeHours"
-        self._attr_name = f"{self._device.deviceModel} Current Uptime Hours"
+        self._attr_name = "Current Uptime Hours"
 
     @property
     def native_value(self):
@@ -384,7 +386,7 @@ class ExtraTimerRemainingSensor(EasyControls3BaseEntity, SensorEntity):
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_ExtraTimerRemaining"
-        self._attr_name = f"{self._device.deviceModel} Extra Mode Timer Remaining"
+        self._attr_name = "Extra Mode Timer Remaining"
 
     @property
     def native_value(self):
@@ -404,7 +406,7 @@ class BoostTimerRemainingSensor(EasyControls3BaseEntity, SensorEntity):
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_BoostTimerRemaining"
-        self._attr_name = f"{self._device.deviceModel} Intensive Mode Timer Remaining"
+        self._attr_name = "Intensive Mode Timer Remaining"
 
     @property
     def native_value(self):
@@ -424,7 +426,7 @@ class FireplaceTimerRemainingSensor(EasyControls3BaseEntity, SensorEntity):
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_FireplaceTimerRemaining"
-        self._attr_name = f"{self._device.deviceModel} Individual Mode Timer Remaining"
+        self._attr_name = "Individual Mode Timer Remaining"
 
     @property
     def native_value(self):
@@ -443,7 +445,7 @@ class HeatRecoveryEfficiency(EasyControls3BaseEntity, SensorEntity):
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_HeatRecoveryEfficiency"
-        self._attr_name = f"{self._device.deviceModel} Heat Recovery Efficiency"
+        self._attr_name = "Heat Recovery Efficiency"
 
     @property
     def native_value(self):
@@ -467,7 +469,7 @@ class RHSensorCountSensor(EasyControls3BaseEntity, SensorEntity):
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_RHSensorCount"
-        self._attr_name = f"{self._device.deviceModel} RH Sensor Count"
+        self._attr_name = "RH Sensor Count"
 
     @property
     def native_value(self) -> int:
@@ -481,7 +483,7 @@ class CO2SensorCountSensor(EasyControls3BaseEntity, SensorEntity):
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_CO2SensorCount"
-        self._attr_name = f"{self._device.deviceModel} CO2 Sensor Count"
+        self._attr_name = "CO2 Sensor Count"
 
     @property
     def native_value(self) -> int:
@@ -495,7 +497,7 @@ class VOCSensorCountSensor(EasyControls3BaseEntity, SensorEntity):
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_VOCSensorCount"
-        self._attr_name = f"{self._device.deviceModel} VOC Sensor Count"
+        self._attr_name = "VOC Sensor Count"
 
     @property
     def native_value(self) -> int:

@@ -1,7 +1,5 @@
 """Config flow for EasyControls3 integration."""
 
-from __future__ import annotations
-
 import logging
 import re
 from typing import Any

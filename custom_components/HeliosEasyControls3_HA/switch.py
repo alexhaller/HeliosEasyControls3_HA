@@ -7,6 +7,8 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from . import EasyControls3BaseEntity, EasyControls3Coordinator
 from .const import DOMAIN
 
+PARALLEL_UPDATES = 1
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -99,7 +101,7 @@ class KWLOnOffSwitch(EasyControls3BaseEntity, SwitchEntity):
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_OnOffSwitch"
-        self._attr_name = f"{self._device.deviceModel} On/Off"
+        self._attr_name = "On/Off"
 
     @property
     def is_on(self) -> bool | None:
@@ -128,7 +130,7 @@ class ControlSwitch(EasyControls3BaseEntity, SwitchEntity):
     ) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_{unique_suffix}"
-        self._attr_name = f"{self._device.deviceModel} {name_suffix}"
+        self._attr_name = name_suffix
         self._device_attr = device_attr
         self._setter_name = setter_name
 
@@ -152,7 +154,7 @@ class FilterReminderSwitch(EasyControls3BaseEntity, SwitchEntity):
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_FilterReminderEnabled"
-        self._attr_name = f"{self._device.deviceModel} Filter Reminder"
+        self._attr_name = "Filter Reminder"
 
     @property
     def is_on(self) -> bool | None:
@@ -178,7 +180,7 @@ class WeeklyTimerSwitch(EasyControls3BaseEntity, SwitchEntity):
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_WeeklyTimerSwitch"
-        self._attr_name = f"{self._device.deviceModel} Weekly Timer"
+        self._attr_name = "Weekly Timer"
 
     @property
     def is_on(self) -> bool | None:

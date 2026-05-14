@@ -13,6 +13,8 @@ from . import EasyControls3BaseEntity, EasyControls3Coordinator
 from .const import DOMAIN
 from .KWLStates import KWLState
 
+PARALLEL_UPDATES = 1
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -131,7 +133,7 @@ class FanSpeedNumber(EasyControls3BaseEntity, NumberEntity):
     ) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_{unique_suffix}"
-        self._attr_name = f"{self._device.deviceModel} {name_suffix}"
+        self._attr_name = name_suffix
         self._device_attr = device_attr
         self._mode = mode
 
@@ -165,7 +167,7 @@ class ModeFanSpeedNumber(EasyControls3BaseEntity, NumberEntity):
     ) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_{unique_suffix}"
-        self._attr_name = f"{self._device.deviceModel} {name_suffix}"
+        self._attr_name = name_suffix
         self._device_attr = device_attr
         self._setter_name = setter_name
 
@@ -200,7 +202,7 @@ class AirTempTargetNumber(EasyControls3BaseEntity, NumberEntity):
     ) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_{unique_suffix}"
-        self._attr_name = f"{self._device.deviceModel} {name_suffix}"
+        self._attr_name = name_suffix
         self._device_attr = device_attr
         self._setter_name = setter_name
 
@@ -223,7 +225,7 @@ class RHLimitNumber(EasyControls3BaseEntity, NumberEntity):
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_maxRH"
-        self._attr_name = f"{self._device.deviceModel} RH Limit"
+        self._attr_name = "RH Limit"
 
     @property
     def native_value(self):
@@ -244,7 +246,7 @@ class CO2LimitNumber(EasyControls3BaseEntity, NumberEntity):
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_maxCO2"
-        self._attr_name = f"{self._device.deviceModel} CO2/VOC Limit"
+        self._attr_name = "CO2/VOC Limit"
 
     @property
     def native_value(self):
@@ -266,7 +268,7 @@ class BypassMaxOutdoorTempNumber(EasyControls3BaseEntity, NumberEntity):
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_bypassMaxOutdoorTemp"
-        self._attr_name = f"{self._device.deviceModel} Bypass Max Outdoor Temperature"
+        self._attr_name = "Bypass Max Outdoor Temperature"
 
     @property
     def native_value(self):

@@ -9,6 +9,8 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from . import EasyControls3BaseEntity, EasyControls3Coordinator
 from .const import DOMAIN
 
+PARALLEL_UPDATES = 1
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -31,7 +33,7 @@ class IntensiveDuration(EasyControls3BaseEntity, TimeEntity):
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_intensiveDuration"
-        self._attr_name = f"{self._device.deviceModel} Intensive Mode Duration"
+        self._attr_name = "Intensive Mode Duration"
 
     @property
     def native_value(self) -> time | None:
@@ -48,7 +50,7 @@ class ExtraModeDuration(EasyControls3BaseEntity, TimeEntity):
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_extraModeDuration"
-        self._attr_name = f"{self._device.deviceModel} Extra Mode Duration"
+        self._attr_name = "Extra Mode Duration"
 
     @property
     def native_value(self) -> time | None:
@@ -65,7 +67,7 @@ class FireplaceModeDuration(EasyControls3BaseEntity, TimeEntity):
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_fireplaceModeDuration"
-        self._attr_name = f"{self._device.deviceModel} Individual Mode Duration"
+        self._attr_name = "Individual Mode Duration"
 
     @property
     def native_value(self) -> time | None:

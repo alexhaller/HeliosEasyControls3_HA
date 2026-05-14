@@ -9,6 +9,8 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from . import EasyControls3BaseEntity, EasyControls3Coordinator
 from .const import DOMAIN
 
+PARALLEL_UPDATES = 0
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -31,7 +33,7 @@ class DefrostingBinarySensor(EasyControls3BaseEntity, BinarySensorEntity):
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_Defrosting"
-        self._attr_name = f"{self._device.deviceModel} Defrosting"
+        self._attr_name = "Defrosting"
 
     @property
     def is_on(self) -> bool | None:
@@ -48,7 +50,7 @@ class EmergencyStopBinarySensor(EasyControls3BaseEntity, BinarySensorEntity):
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_EmergencyStop"
-        self._attr_name = f"{self._device.deviceModel} Emergency Stop"
+        self._attr_name = "Emergency Stop"
 
     @property
     def is_on(self) -> bool | None:
@@ -61,7 +63,7 @@ class BypassBinarySensor(EasyControls3BaseEntity, BinarySensorEntity):
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_BypassOpen"
-        self._attr_name = f"{self._device.deviceModel} Bypass Open"
+        self._attr_name = "Bypass"
 
     @property
     def is_on(self) -> bool | None:

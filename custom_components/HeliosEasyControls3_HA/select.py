@@ -8,6 +8,8 @@ from . import EasyControls3BaseEntity, EasyControls3Coordinator
 from .const import DOMAIN
 from .KWLStates import KWLState
 
+PARALLEL_UPDATES = 1
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -28,7 +30,7 @@ class StateSelect(EasyControls3BaseEntity, SelectEntity):
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_State"
-        self._attr_name = f"{self._device.deviceModel} KWL State"
+        self._attr_name = "KWL State"
         self._attr_options = [state.name for state in KWLState]
 
     @property
@@ -50,7 +52,7 @@ class TempControlModeSelect(EasyControls3BaseEntity, SelectEntity):
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_TempControlMode"
-        self._attr_name = f"{self._device.deviceModel} Temperature Control Mode"
+        self._attr_name = "Temperature Control Mode"
         self._attr_options = list(self._VALUE_TO_OPTION.values())
 
     @property
@@ -74,7 +76,7 @@ class HeatExchangerSelect(EasyControls3BaseEntity, SelectEntity):
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_heatExchanger"
-        self._attr_name = f"{self._device.deviceModel} Heat Exchanger"
+        self._attr_name = "Heat Exchanger"
         self._attr_options = list(self._VALUE_TO_OPTION.values())
 
     @property
