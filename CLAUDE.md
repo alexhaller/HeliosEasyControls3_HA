@@ -54,7 +54,7 @@ python -c "import json; reqs=json.load(open('custom_components/HeliosEasyControl
 - `hacs.json` must exist in the repo root with `name` and `homeassistant` (minimum supported HA version).
 - `manifest.json` must include: `domain`, `name`, `codeowners`, `documentation`, `issue_tracker`, `version`.
 - Only one integration directory is allowed under `custom_components/`.
-- Brand assets are required: `brands/icon.png` (512×512 PNG) in the repo root. Optionally also `brands/logo.png`.
+- Brand assets are required in two places: `custom_components/HeliosEasyControls3_HA/brand/icon.png` (validated by the HACS action) and `brands/icon.png` (displayed in the HACS store UI). Both should be the same 512×512 PNG.
 - The GitHub repository must have a description and topics set — both are surfaced in the HACS UI.
 - Use GitHub releases for versioning; the release tag is what HACS displays as the installed version.
 
