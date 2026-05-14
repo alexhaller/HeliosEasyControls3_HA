@@ -1,3 +1,15 @@
+## [1.8.0](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v1.7.0...v1.8.0) (2026-05-14)
+
+### Features
+
+* HA conventions compliance and HACS publishing setup ([3be12d9](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/3be12d9ce808b1594faff828b85da744d0ee3108))
+
+### Documentation
+
+* clarify semantic-release owns manifest.json version ([d21c97e](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/d21c97ebef06d913ae8b6888a0ef7118a4ac5168))
+* comprehensive register map with full Vallox API cross-reference ([48f97cd](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/48f97cd9afbd40790516b4992dca639de5b98705))
+* rewrite README with current entity list and full register map ([6731561](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/67315612ad659adad4dc8bd5905c8ce0cc5d9c8e))
+
 ## [1.7.0](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v1.6.0...v1.7.0) (2026-05-12)
 
 ### Features
