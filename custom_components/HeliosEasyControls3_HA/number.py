@@ -1,16 +1,19 @@
+from collections.abc import Awaitable, Callable
+
 from homeassistant.components.number import NumberDeviceClass, NumberEntity
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     CONCENTRATION_PARTS_PER_MILLION,
     PERCENTAGE,
     UnitOfTemperature,
 )
 from homeassistant.core import HomeAssistant
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import EasyControls3BaseEntity, EasyControls3Coordinator
 from .const import DOMAIN
+from .EasyControls3Instance import EasyControls3Instance
 from .KWLStates import KWLState
 
 PARALLEL_UPDATES = 1
@@ -29,85 +32,85 @@ async def async_setup_entry(
                 coordinator,
                 "atHomeFanSpeed",
                 "Fan Speed At Home",
-                "AtHomeFanSpeed",
-                KWLState.AtHome,
+                lambda d: d.AtHomeFanSpeed,
+                lambda d, v: d.setFanSpeed(v, KWLState.AtHome),
             ),
             FanSpeedNumber(
                 coordinator,
                 "awayFanSpeed",
                 "Fan Speed Away",
-                "AwayFanSpeed",
-                KWLState.Away,
+                lambda d: d.AwayFanSpeed,
+                lambda d, v: d.setFanSpeed(v, KWLState.Away),
             ),
             FanSpeedNumber(
                 coordinator,
                 "intensivFanSpeed",
                 "Fan Speed Intensive",
-                "IntensivFanSpeed",
-                KWLState.Intensive,
+                lambda d: d.IntensivFanSpeed,
+                lambda d, v: d.setFanSpeed(v, KWLState.Intensive),
             ),
-            ModeFanSpeedNumber(
+            FanSpeedNumber(
                 coordinator,
                 "fireplaceExtractFanSpeed",
                 "Individual Extract Fan Speed",
-                "FireplaceExtractFanSpeed",
-                "setFireplaceExtractFanSpeed",
+                lambda d: d.FireplaceExtractFanSpeed,
+                lambda d, v: d.setFireplaceExtractFanSpeed(v),
             ),
-            ModeFanSpeedNumber(
+            FanSpeedNumber(
                 coordinator,
                 "fireplaceSupplyFanSpeed",
                 "Individual Supply Fan Speed",
-                "FireplaceSupplyFanSpeed",
-                "setFireplaceSupplyFanSpeed",
+                lambda d: d.FireplaceSupplyFanSpeed,
+                lambda d, v: d.setFireplaceSupplyFanSpeed(v),
             ),
-            ModeFanSpeedNumber(
+            FanSpeedNumber(
                 coordinator,
                 "extraExtractFanSpeed",
                 "Extra Extract Fan Speed",
-                "ExtraExtractFanSpeed",
-                "setExtraExtractFanSpeed",
+                lambda d: d.ExtraExtractFanSpeed,
+                lambda d, v: d.setExtraExtractFanSpeed(v),
             ),
-            ModeFanSpeedNumber(
+            FanSpeedNumber(
                 coordinator,
                 "extraSupplyFanSpeed",
                 "Extra Supply Fan Speed",
-                "ExtraSupplyFanSpeed",
-                "setExtraSupplyFanSpeed",
+                lambda d: d.ExtraSupplyFanSpeed,
+                lambda d, v: d.setExtraSupplyFanSpeed(v),
             ),
             AirTempTargetNumber(
                 coordinator,
                 "homeAirTempTarget",
                 "Home Air Temp Target",
-                "HomeAirTempTarget",
-                "setHomeAirTempTarget",
+                lambda d: d.HomeAirTempTarget,
+                lambda d, v: d.setHomeAirTempTarget(v),
             ),
             AirTempTargetNumber(
                 coordinator,
                 "awayAirTempTarget",
                 "Away Air Temp Target",
-                "AwayAirTempTarget",
-                "setAwayAirTempTarget",
+                lambda d: d.AwayAirTempTarget,
+                lambda d, v: d.setAwayAirTempTarget(v),
             ),
             AirTempTargetNumber(
                 coordinator,
                 "boostAirTempTarget",
                 "Intensive Air Temp Target",
-                "BoostAirTempTarget",
-                "setBoostAirTempTarget",
+                lambda d: d.BoostAirTempTarget,
+                lambda d, v: d.setBoostAirTempTarget(v),
             ),
             AirTempTargetNumber(
                 coordinator,
                 "extraAirTempTarget",
                 "Extra Air Temp Target",
-                "ExtraAirTempTarget",
-                "setExtraAirTempTarget",
+                lambda d: d.ExtraAirTempTarget,
+                lambda d, v: d.setExtraAirTempTarget(v),
             ),
             AirTempTargetNumber(
                 coordinator,
                 "fireplaceAirTempTarget",
                 "Individual Air Temp Target",
-                "FireplaceAirTempTarget",
-                "setFireplaceAirTempTarget",
+                lambda d: d.FireplaceAirTempTarget,
+                lambda d, v: d.setFireplaceAirTempTarget(v),
             ),
             RHLimitNumber(coordinator),
             CO2LimitNumber(coordinator),
@@ -122,65 +125,28 @@ class FanSpeedNumber(EasyControls3BaseEntity, NumberEntity):
     native_step = 1.0
     native_unit_of_measurement = PERCENTAGE
     entity_category = EntityCategory.CONFIG
+    _attr_icon = "mdi:fan"
 
     def __init__(
         self,
         coordinator: EasyControls3Coordinator,
         unique_suffix: str,
-        name_suffix: str,
-        device_attr: str,
-        mode: KWLState,
+        name: str,
+        getter: Callable[[EasyControls3Instance], int | None],
+        setter: Callable[[EasyControls3Instance, int], Awaitable[None]],
     ) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_{unique_suffix}"
-        self._attr_name = name_suffix
-        self._device_attr = device_attr
-        self._mode = mode
+        self._attr_name = name
+        self._getter = getter
+        self._setter = setter
 
     @property
-    def icon(self) -> str:
-        return "mdi:fan"
-
-    @property
-    def native_value(self):
-        return getattr(self._device, self._device_attr)
+    def native_value(self) -> int | None:
+        return self._getter(self._device)
 
     async def async_set_native_value(self, value: float) -> None:
-        await self._device.setFanSpeed(int(value), self._mode)
-        await self.coordinator.async_request_refresh()
-
-
-class ModeFanSpeedNumber(EasyControls3BaseEntity, NumberEntity):
-    native_min_value = 1.0
-    native_max_value = 100.0
-    native_step = 1.0
-    native_unit_of_measurement = PERCENTAGE
-    entity_category = EntityCategory.CONFIG
-
-    def __init__(
-        self,
-        coordinator: EasyControls3Coordinator,
-        unique_suffix: str,
-        name_suffix: str,
-        device_attr: str,
-        setter_name: str,
-    ) -> None:
-        super().__init__(coordinator)
-        self._attr_unique_id = f"{self._device.serialNR}_{unique_suffix}"
-        self._attr_name = name_suffix
-        self._device_attr = device_attr
-        self._setter_name = setter_name
-
-    @property
-    def icon(self) -> str:
-        return "mdi:fan"
-
-    @property
-    def native_value(self):
-        return getattr(self._device, self._device_attr)
-
-    async def async_set_native_value(self, value: float) -> None:
-        await getattr(self._device, self._setter_name)(int(value))
+        await self._setter(self._device, int(value))
         await self.coordinator.async_request_refresh()
 
 
@@ -196,22 +162,22 @@ class AirTempTargetNumber(EasyControls3BaseEntity, NumberEntity):
         self,
         coordinator: EasyControls3Coordinator,
         unique_suffix: str,
-        name_suffix: str,
-        device_attr: str,
-        setter_name: str,
+        name: str,
+        getter: Callable[[EasyControls3Instance], float | None],
+        setter: Callable[[EasyControls3Instance, float], Awaitable[None]],
     ) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_{unique_suffix}"
-        self._attr_name = name_suffix
-        self._device_attr = device_attr
-        self._setter_name = setter_name
+        self._attr_name = name
+        self._getter = getter
+        self._setter = setter
 
     @property
-    def native_value(self):
-        return getattr(self._device, self._device_attr)
+    def native_value(self) -> float | None:
+        return self._getter(self._device)
 
     async def async_set_native_value(self, value: float) -> None:
-        await getattr(self._device, self._setter_name)(value)
+        await self._setter(self._device, value)
         await self.coordinator.async_request_refresh()
 
 
@@ -228,7 +194,7 @@ class RHLimitNumber(EasyControls3BaseEntity, NumberEntity):
         self._attr_name = "RH Limit"
 
     @property
-    def native_value(self):
+    def native_value(self) -> int | None:
         return self._device.maxRH
 
     async def async_set_native_value(self, value: float) -> None:
@@ -249,7 +215,7 @@ class CO2LimitNumber(EasyControls3BaseEntity, NumberEntity):
         self._attr_name = "CO2/VOC Limit"
 
     @property
-    def native_value(self):
+    def native_value(self) -> int | None:
         return self._device.maxCO2
 
     async def async_set_native_value(self, value: float) -> None:
@@ -271,7 +237,7 @@ class BypassMaxOutdoorTempNumber(EasyControls3BaseEntity, NumberEntity):
         self._attr_name = "Bypass Max Outdoor Temperature"
 
     @property
-    def native_value(self):
+    def native_value(self) -> float | None:
         return self._device.bypassMaxOutdoorTemp
 
     async def async_set_native_value(self, value: float) -> None:

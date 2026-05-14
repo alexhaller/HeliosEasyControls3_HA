@@ -1,11 +1,14 @@
+from collections.abc import Awaitable, Callable
+
 from homeassistant.components.switch import SwitchDeviceClass, SwitchEntity
-from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import EasyControls3BaseEntity, EasyControls3Coordinator
 from .const import DOMAIN
+from .EasyControls3Instance import EasyControls3Instance
 
 PARALLEL_UPDATES = 1
 
@@ -19,77 +22,91 @@ async def async_setup_entry(
     async_add_entities(
         [
             KWLOnOffSwitch(coordinator),
-            WeeklyTimerSwitch(coordinator),
-            FilterReminderSwitch(coordinator),
+            ControlSwitch(
+                coordinator,
+                "weeklyTimerSwitch",
+                "Weekly Timer",
+                lambda d: d.WeeklyTimerEnabled,
+                lambda d, v: d.setWeeklyTimerEnabled(v),
+                icon="mdi:calendar-clock",
+            ),
+            ControlSwitch(
+                coordinator,
+                "FilterReminderEnabled",
+                "Filter Reminder",
+                lambda d: d.FilterReminderEnabled,
+                lambda d, v: d.setFilterReminderEnabled(v),
+                icon="mdi:bell-outline",
+            ),
             ControlSwitch(
                 coordinator,
                 "rhControlHome",
                 "RH Control Home",
-                "RhControlHome",
-                "setRhControlHome",
+                lambda d: d.RhControlHome,
+                lambda d, v: d.setRhControlHome(v),
             ),
             ControlSwitch(
                 coordinator,
                 "co2ControlHome",
                 "CO2 Control Home",
-                "Co2ControlHome",
-                "setCo2ControlHome",
+                lambda d: d.Co2ControlHome,
+                lambda d, v: d.setCo2ControlHome(v),
             ),
             ControlSwitch(
                 coordinator,
                 "rhControlAway",
                 "RH Control Away",
-                "RhControlAway",
-                "setRhControlAway",
+                lambda d: d.RhControlAway,
+                lambda d, v: d.setRhControlAway(v),
             ),
             ControlSwitch(
                 coordinator,
                 "co2ControlAway",
                 "CO2 Control Away",
-                "Co2ControlAway",
-                "setCo2ControlAway",
+                lambda d: d.Co2ControlAway,
+                lambda d, v: d.setCo2ControlAway(v),
             ),
             ControlSwitch(
                 coordinator,
                 "rhControlBoost",
                 "RH Control Intensive",
-                "RhControlBoost",
-                "setRhControlBoost",
+                lambda d: d.RhControlBoost,
+                lambda d, v: d.setRhControlBoost(v),
             ),
             ControlSwitch(
                 coordinator,
                 "co2ControlBoost",
                 "CO2 Control Intensive",
-                "Co2ControlBoost",
-                "setCo2ControlBoost",
+                lambda d: d.Co2ControlBoost,
+                lambda d, v: d.setCo2ControlBoost(v),
             ),
             ControlSwitch(
                 coordinator,
                 "bypassSetting",
                 "Bypass",
-                "BypassSetting",
-                "setBypassSetting",
+                lambda d: d.BypassSetting,
+                lambda d, v: d.setBypassSetting(v),
             ),
             ControlSwitch(
                 coordinator,
                 "steplessBypass",
                 "Stepless Bypass",
-                "SteplessBypass",
-                "setSteplessBypass",
+                lambda d: d.SteplessBypass,
+                lambda d, v: d.setSteplessBypass(v),
             ),
             ControlSwitch(
                 coordinator,
                 "coolHeatRecoveryEnabled",
                 "Cool Recovery Enabled",
-                "CoolHeatRecoveryEnabled",
-                "setCoolHeatRecoveryEnabled",
+                lambda d: d.CoolHeatRecoveryEnabled,
+                lambda d, v: d.setCoolHeatRecoveryEnabled(v),
             ),
             ControlSwitch(
                 coordinator,
                 "coolHeatRecovery",
                 "Cool Recovery",
-                "CoolHeatRecovery",
-                "setCoolHeatRecovery",
+                lambda d: d.CoolHeatRecovery,
+                lambda d, v: d.setCoolHeatRecovery(v),
             ),
         ]
     )
@@ -124,76 +141,27 @@ class ControlSwitch(EasyControls3BaseEntity, SwitchEntity):
         self,
         coordinator: EasyControls3Coordinator,
         unique_suffix: str,
-        name_suffix: str,
-        device_attr: str,
-        setter_name: str,
+        name: str,
+        getter: Callable[[EasyControls3Instance], bool | None],
+        setter: Callable[[EasyControls3Instance, bool], Awaitable[None]],
+        icon: str | None = None,
     ) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_{unique_suffix}"
-        self._attr_name = name_suffix
-        self._device_attr = device_attr
-        self._setter_name = setter_name
+        self._attr_name = name
+        self._getter = getter
+        self._setter = setter
+        if icon is not None:
+            self._attr_icon = icon
 
     @property
     def is_on(self) -> bool | None:
-        return getattr(self._device, self._device_attr)
+        return self._getter(self._device)
 
     async def async_turn_on(self, **kwargs) -> None:
-        await getattr(self._device, self._setter_name)(True)
+        await self._setter(self._device, True)
         await self.coordinator.async_request_refresh()
 
     async def async_turn_off(self, **kwargs) -> None:
-        await getattr(self._device, self._setter_name)(False)
-        await self.coordinator.async_request_refresh()
-
-
-class FilterReminderSwitch(EasyControls3BaseEntity, SwitchEntity):
-    device_class = SwitchDeviceClass.SWITCH
-    entity_category = EntityCategory.CONFIG
-
-    def __init__(self, coordinator: EasyControls3Coordinator) -> None:
-        super().__init__(coordinator)
-        self._attr_unique_id = f"{self._device.serialNR}_FilterReminderEnabled"
-        self._attr_name = "Filter Reminder"
-
-    @property
-    def is_on(self) -> bool | None:
-        return self._device.FilterReminderEnabled
-
-    @property
-    def icon(self) -> str:
-        return "mdi:bell-outline"
-
-    async def async_turn_on(self, **kwargs) -> None:
-        await self._device.setFilterReminderEnabled(True)
-        await self.coordinator.async_request_refresh()
-
-    async def async_turn_off(self, **kwargs) -> None:
-        await self._device.setFilterReminderEnabled(False)
-        await self.coordinator.async_request_refresh()
-
-
-class WeeklyTimerSwitch(EasyControls3BaseEntity, SwitchEntity):
-    device_class = SwitchDeviceClass.SWITCH
-    entity_category = EntityCategory.CONFIG
-
-    def __init__(self, coordinator: EasyControls3Coordinator) -> None:
-        super().__init__(coordinator)
-        self._attr_unique_id = f"{self._device.serialNR}_WeeklyTimerSwitch"
-        self._attr_name = "Weekly Timer"
-
-    @property
-    def is_on(self) -> bool | None:
-        return self._device.WeeklyTimerEnabled
-
-    @property
-    def icon(self) -> str:
-        return "mdi:calendar-clock"
-
-    async def async_turn_on(self, **kwargs) -> None:
-        await self._device.setWeeklyTimerEnabled(True)
-        await self.coordinator.async_request_refresh()
-
-    async def async_turn_off(self, **kwargs) -> None:
-        await self._device.setWeeklyTimerEnabled(False)
+        await self._setter(self._device, False)
         await self.coordinator.async_request_refresh()

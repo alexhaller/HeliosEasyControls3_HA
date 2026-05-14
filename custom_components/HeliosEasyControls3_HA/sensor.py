@@ -1,21 +1,24 @@
+from collections.abc import Callable
+
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
     SensorStateClass,
 )
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
+    CONCENTRATION_PARTS_PER_MILLION,
     PERCENTAGE,
     UnitOfTemperature,
-    CONCENTRATION_PARTS_PER_MILLION,
     UnitOfTime,
 )
 from homeassistant.core import HomeAssistant
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import EasyControls3BaseEntity, EasyControls3Coordinator
 from .const import DOMAIN
+from .EasyControls3Instance import EasyControls3Instance
 
 PARALLEL_UPDATES = 0
 
@@ -32,19 +35,31 @@ async def async_setup_entry(
             coordinator,
             "OutsideTemperature",
             "Outside Temperature",
-            "OutsideTemperature",
+            lambda d: d.OutsideTemperature,
         ),
         TemperatureSensor(
-            coordinator, "SupplyTemperature", "Supply Temperature", "SupplyTemperature"
+            coordinator,
+            "SupplyTemperature",
+            "Supply Temperature",
+            lambda d: d.SupplyTemperature,
         ),
         TemperatureSensor(
-            coordinator, "IndoorTemperature", "Indoor Temperature", "IndoorTemperature"
+            coordinator,
+            "IndoorTemperature",
+            "Indoor Temperature",
+            lambda d: d.IndoorTemperature,
         ),
         TemperatureSensor(
             coordinator,
             "ExhaustTemperature",
             "Exhaust Temperature",
-            "ExhaustTemperature",
+            lambda d: d.ExhaustTemperature,
+        ),
+        TemperatureSensor(
+            coordinator,
+            "SupplyCellAirTemperature",
+            "Supply Cell Air Temperature",
+            lambda d: d.SupplyCellAirTemperature,
         ),
         HumiditySensor(coordinator),
         CurrentFanSpeed(coordinator),
@@ -64,12 +79,6 @@ async def async_setup_entry(
         ExtraTimerRemainingSensor(coordinator),
         BoostTimerRemainingSensor(coordinator),
         FireplaceTimerRemainingSensor(coordinator),
-        TemperatureSensor(
-            coordinator,
-            "SupplyCellAirTemperature",
-            "Supply Cell Air Temperature",
-            "SupplyCellAirTemperature",
-        ),
     ]
 
     for i in range(6):
@@ -95,17 +104,17 @@ class TemperatureSensor(EasyControls3BaseEntity, SensorEntity):
         self,
         coordinator: EasyControls3Coordinator,
         unique_suffix: str,
-        name_suffix: str,
-        device_attr: str,
+        name: str,
+        getter: Callable[[EasyControls3Instance], float | None],
     ) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_{unique_suffix}"
-        self._attr_name = name_suffix
-        self._device_attr = device_attr
+        self._attr_name = name
+        self._getter = getter
 
     @property
-    def native_value(self):
-        return getattr(self._device, self._device_attr)
+    def native_value(self) -> float | None:
+        return self._getter(self._device)
 
 
 class HumiditySensor(EasyControls3BaseEntity, SensorEntity):
@@ -120,7 +129,7 @@ class HumiditySensor(EasyControls3BaseEntity, SensorEntity):
         self._attr_name = "Air Relative Humidity"
 
     @property
-    def native_value(self):
+    def native_value(self) -> int | None:
         return self._device.AirRH
 
 
@@ -137,7 +146,7 @@ class RHSensor(EasyControls3BaseEntity, SensorEntity):
         self._attr_name = f"RH Sensor {index}"
 
     @property
-    def native_value(self):
+    def native_value(self) -> int | None:
         return self._device.rhSensor(self._index)
 
     @property
@@ -158,7 +167,7 @@ class CO2Sensor(EasyControls3BaseEntity, SensorEntity):
         self._attr_name = f"CO2 Sensor {index}"
 
     @property
-    def native_value(self):
+    def native_value(self) -> int | None:
         return self._device.co2Sensor(self._index)
 
     @property
@@ -179,7 +188,7 @@ class VOCSensor(EasyControls3BaseEntity, SensorEntity):
         self._attr_name = f"VOC Sensor {index}"
 
     @property
-    def native_value(self):
+    def native_value(self) -> int | None:
         return self._device.vocSensor(self._index)
 
     @property
@@ -191,6 +200,7 @@ class CurrentFanSpeed(EasyControls3BaseEntity, SensorEntity):
     native_unit_of_measurement = PERCENTAGE
     state_class = SensorStateClass.MEASUREMENT
     suggested_display_precision = 0
+    _attr_icon = "mdi:fan"
 
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
@@ -198,18 +208,15 @@ class CurrentFanSpeed(EasyControls3BaseEntity, SensorEntity):
         self._attr_name = "Current Fan Speed"
 
     @property
-    def native_value(self):
+    def native_value(self) -> int | None:
         return self._device.CurrentFanSpeed
-
-    @property
-    def icon(self) -> str:
-        return "mdi:fan"
 
 
 class ExtractFanRPMSensor(EasyControls3BaseEntity, SensorEntity):
     native_unit_of_measurement = "RPM"
     state_class = SensorStateClass.MEASUREMENT
     suggested_display_precision = 0
+    _attr_icon = "mdi:fan"
 
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
@@ -217,18 +224,15 @@ class ExtractFanRPMSensor(EasyControls3BaseEntity, SensorEntity):
         self._attr_name = "Extract Fan RPM"
 
     @property
-    def native_value(self):
+    def native_value(self) -> int | None:
         return self._device.ExtractFanRPM
-
-    @property
-    def icon(self) -> str:
-        return "mdi:fan"
 
 
 class SupplyFanRPMSensor(EasyControls3BaseEntity, SensorEntity):
     native_unit_of_measurement = "RPM"
     state_class = SensorStateClass.MEASUREMENT
     suggested_display_precision = 0
+    _attr_icon = "mdi:fan"
 
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
@@ -236,15 +240,13 @@ class SupplyFanRPMSensor(EasyControls3BaseEntity, SensorEntity):
         self._attr_name = "Supply Fan RPM"
 
     @property
-    def native_value(self):
+    def native_value(self) -> int | None:
         return self._device.SupplyFanRPM
-
-    @property
-    def icon(self) -> str:
-        return "mdi:fan"
 
 
 class CellStateSensor(EasyControls3BaseEntity, SensorEntity):
+    _attr_icon = "mdi:heat-wave"
+
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_CellState"
@@ -255,14 +257,11 @@ class CellStateSensor(EasyControls3BaseEntity, SensorEntity):
         state = self._device.CellState
         return state.name if state is not None else None
 
-    @property
-    def icon(self) -> str:
-        return "mdi:heat-wave"
-
 
 class FilterChanged(EasyControls3BaseEntity, SensorEntity):
     device_class = SensorDeviceClass.DATE
     entity_category = EntityCategory.DIAGNOSTIC
+    _attr_icon = "mdi:calendar-sync-outline"
 
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
@@ -273,14 +272,11 @@ class FilterChanged(EasyControls3BaseEntity, SensorEntity):
     def native_value(self):
         return self._device.filterChanged
 
-    @property
-    def icon(self) -> str:
-        return "mdi:calendar-sync-outline"
-
 
 class FilterDue(EasyControls3BaseEntity, SensorEntity):
     device_class = SensorDeviceClass.DATE
     entity_category = EntityCategory.DIAGNOSTIC
+    _attr_icon = "mdi:calendar-alert-outline"
 
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
@@ -291,10 +287,6 @@ class FilterDue(EasyControls3BaseEntity, SensorEntity):
     def native_value(self):
         return self._device.filterDue
 
-    @property
-    def icon(self) -> str:
-        return "mdi:calendar-alert-outline"
-
 
 class FilterRemainingDaysSensor(EasyControls3BaseEntity, SensorEntity):
     device_class = SensorDeviceClass.DURATION
@@ -302,6 +294,7 @@ class FilterRemainingDaysSensor(EasyControls3BaseEntity, SensorEntity):
     state_class = SensorStateClass.MEASUREMENT
     suggested_display_precision = 0
     entity_category = EntityCategory.DIAGNOSTIC
+    _attr_icon = "mdi:calendar-clock"
 
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
@@ -309,12 +302,8 @@ class FilterRemainingDaysSensor(EasyControls3BaseEntity, SensorEntity):
         self._attr_name = "Filter Remaining Days"
 
     @property
-    def native_value(self):
+    def native_value(self) -> int | None:
         return self._device.FilterRemainingDays
-
-    @property
-    def icon(self) -> str:
-        return "mdi:calendar-clock"
 
 
 class TotalUptimeYearsSensor(EasyControls3BaseEntity, SensorEntity):
@@ -322,6 +311,7 @@ class TotalUptimeYearsSensor(EasyControls3BaseEntity, SensorEntity):
     state_class = SensorStateClass.TOTAL_INCREASING
     suggested_display_precision = 0
     entity_category = EntityCategory.DIAGNOSTIC
+    _attr_icon = "mdi:timer-outline"
 
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
@@ -329,12 +319,8 @@ class TotalUptimeYearsSensor(EasyControls3BaseEntity, SensorEntity):
         self._attr_name = "Total Uptime Years"
 
     @property
-    def native_value(self):
+    def native_value(self) -> int | None:
         return self._device.TotalUptimeYears
-
-    @property
-    def icon(self) -> str:
-        return "mdi:timer-outline"
 
 
 class TotalUptimeHoursSensor(EasyControls3BaseEntity, SensorEntity):
@@ -342,6 +328,7 @@ class TotalUptimeHoursSensor(EasyControls3BaseEntity, SensorEntity):
     state_class = SensorStateClass.TOTAL_INCREASING
     suggested_display_precision = 0
     entity_category = EntityCategory.DIAGNOSTIC
+    _attr_icon = "mdi:timer-outline"
 
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
@@ -349,12 +336,8 @@ class TotalUptimeHoursSensor(EasyControls3BaseEntity, SensorEntity):
         self._attr_name = "Total Uptime Hours"
 
     @property
-    def native_value(self):
+    def native_value(self) -> int | None:
         return self._device.TotalUptimeHours
-
-    @property
-    def icon(self) -> str:
-        return "mdi:timer-outline"
 
 
 class CurrentUptimeHoursSensor(EasyControls3BaseEntity, SensorEntity):
@@ -362,6 +345,7 @@ class CurrentUptimeHoursSensor(EasyControls3BaseEntity, SensorEntity):
     state_class = SensorStateClass.MEASUREMENT
     suggested_display_precision = 0
     entity_category = EntityCategory.DIAGNOSTIC
+    _attr_icon = "mdi:timer-outline"
 
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
@@ -369,12 +353,8 @@ class CurrentUptimeHoursSensor(EasyControls3BaseEntity, SensorEntity):
         self._attr_name = "Current Uptime Hours"
 
     @property
-    def native_value(self):
+    def native_value(self) -> int | None:
         return self._device.CurrentUptimeHours
-
-    @property
-    def icon(self) -> str:
-        return "mdi:timer-outline"
 
 
 class ExtraTimerRemainingSensor(EasyControls3BaseEntity, SensorEntity):
@@ -382,6 +362,7 @@ class ExtraTimerRemainingSensor(EasyControls3BaseEntity, SensorEntity):
     native_unit_of_measurement = UnitOfTime.MINUTES
     state_class = SensorStateClass.MEASUREMENT
     suggested_display_precision = 0
+    _attr_icon = "mdi:timer-outline"
 
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
@@ -389,12 +370,8 @@ class ExtraTimerRemainingSensor(EasyControls3BaseEntity, SensorEntity):
         self._attr_name = "Extra Mode Timer Remaining"
 
     @property
-    def native_value(self):
+    def native_value(self) -> int | None:
         return self._device.ExtraTimerRemaining
-
-    @property
-    def icon(self) -> str:
-        return "mdi:timer-outline"
 
 
 class BoostTimerRemainingSensor(EasyControls3BaseEntity, SensorEntity):
@@ -402,6 +379,7 @@ class BoostTimerRemainingSensor(EasyControls3BaseEntity, SensorEntity):
     native_unit_of_measurement = UnitOfTime.MINUTES
     state_class = SensorStateClass.MEASUREMENT
     suggested_display_precision = 0
+    _attr_icon = "mdi:timer-outline"
 
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
@@ -409,12 +387,8 @@ class BoostTimerRemainingSensor(EasyControls3BaseEntity, SensorEntity):
         self._attr_name = "Intensive Mode Timer Remaining"
 
     @property
-    def native_value(self):
+    def native_value(self) -> int | None:
         return self._device.BoostTimerRemaining
-
-    @property
-    def icon(self) -> str:
-        return "mdi:timer-outline"
 
 
 class FireplaceTimerRemainingSensor(EasyControls3BaseEntity, SensorEntity):
@@ -422,6 +396,7 @@ class FireplaceTimerRemainingSensor(EasyControls3BaseEntity, SensorEntity):
     native_unit_of_measurement = UnitOfTime.MINUTES
     state_class = SensorStateClass.MEASUREMENT
     suggested_display_precision = 0
+    _attr_icon = "mdi:timer-outline"
 
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
@@ -429,18 +404,15 @@ class FireplaceTimerRemainingSensor(EasyControls3BaseEntity, SensorEntity):
         self._attr_name = "Individual Mode Timer Remaining"
 
     @property
-    def native_value(self):
+    def native_value(self) -> int | None:
         return self._device.FireplaceTimerRemaining
-
-    @property
-    def icon(self) -> str:
-        return "mdi:timer-outline"
 
 
 class HeatRecoveryEfficiency(EasyControls3BaseEntity, SensorEntity):
     native_unit_of_measurement = PERCENTAGE
     state_class = SensorStateClass.MEASUREMENT
     suggested_display_precision = 1
+    _attr_icon = "mdi:heat-wave"
 
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
@@ -448,18 +420,16 @@ class HeatRecoveryEfficiency(EasyControls3BaseEntity, SensorEntity):
         self._attr_name = "Heat Recovery Efficiency"
 
     @property
-    def native_value(self):
+    def native_value(self) -> float | None:
         supply = self._device.SupplyTemperature
         outside = self._device.OutsideTemperature
         indoor = self._device.IndoorTemperature
+        if supply is None or outside is None or indoor is None:
+            return None
         denominator = indoor - outside
         if denominator == 0:
             return None
         return round((supply - outside) / denominator * 100, 1)
-
-    @property
-    def icon(self) -> str:
-        return "mdi:heat-wave"
 
 
 class RHSensorCountSensor(EasyControls3BaseEntity, SensorEntity):
