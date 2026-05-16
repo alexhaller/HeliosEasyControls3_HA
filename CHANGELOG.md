@@ -1,3 +1,9 @@
+## [1.8.4](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v1.8.3...v1.8.4) (2026-05-16)
+
+### Bug Fixes
+
+* add icon.png to component root for HA integrations page ([d94f548](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/d94f548f2a61421fd2cf47bfca192db00a3dc6da))
+
 ## [1.8.3](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v1.8.2...v1.8.3) (2026-05-16)
 
 ### Bug Fixes
