@@ -1,3 +1,9 @@
+## [1.8.3](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v1.8.2...v1.8.3) (2026-05-16)
+
+### Bug Fixes
+
+* remove HA suffix from integration display name ([e504df9](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/e504df977062ed12c8a67cb734b362c674f071c9))
+
 ## [1.8.2](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v1.8.1...v1.8.2) (2026-05-14)
 
 ### Bug Fixes

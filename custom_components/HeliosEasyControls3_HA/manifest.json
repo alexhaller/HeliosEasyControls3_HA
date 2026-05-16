@@ -8,5 +8,5 @@
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/alexhaller/HeliosEasyControls3_HA/issues",
   "requirements": ["websockets>=16.0", "python-dateutil>=2.9.0.post0"],
-  "version": "1.8.2"
+  "version": "1.8.3"
 }
