@@ -113,10 +113,9 @@ async def async_setup_entry(
                 lambda d, v: d.setFireplaceAirTempTarget(v),
             ),
             RHLimitNumber(coordinator),
+            CO2LimitNumber(coordinator),
         ]
     )
-    if coordinator.data.co2SensorCount > 0:
-        async_add_entities([CO2LimitNumber(coordinator)])
 
 
 class FanSpeedNumber(EasyControls3BaseEntity, NumberEntity):
