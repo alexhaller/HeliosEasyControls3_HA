@@ -1,3 +1,9 @@
+## [1.8.6](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v1.8.5...v1.8.6) (2026-05-17)
+
+### Bug Fixes
+
+* expand debug log to dump full settings buffer range ([c0fd0c5](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/c0fd0c59e631373e94d1119c7053e69577dc5549))
+
 ## [1.8.5](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v1.8.4...v1.8.5) (2026-05-17)
 
 ### Bug Fixes
