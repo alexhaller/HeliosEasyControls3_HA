@@ -19,45 +19,82 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator: EasyControls3Coordinator = hass.data[DOMAIN][config_entry.entry_id]
-    async_add_entities(
-        [
-            KWLOnOffSwitch(coordinator),
-            ControlSwitch(
-                coordinator,
-                "weeklyTimerSwitch",
-                "Weekly Timer",
-                lambda d: d.WeeklyTimerEnabled,
-                lambda d, v: d.setWeeklyTimerEnabled(v),
-                icon="mdi:calendar-clock",
-            ),
-            ControlSwitch(
-                coordinator,
-                "FilterReminderEnabled",
-                "Filter Reminder",
-                lambda d: d.FilterReminderEnabled,
-                lambda d, v: d.setFilterReminderEnabled(v),
-                icon="mdi:bell-outline",
-            ),
-            ControlSwitch(
-                coordinator,
-                "rhControlHome",
-                "RH Control Home",
-                lambda d: d.RhControlHome,
-                lambda d, v: d.setRhControlHome(v),
-            ),
+    entities: list = [
+        KWLOnOffSwitch(coordinator),
+        ControlSwitch(
+            coordinator,
+            "weeklyTimerSwitch",
+            "Weekly Timer",
+            lambda d: d.WeeklyTimerEnabled,
+            lambda d, v: d.setWeeklyTimerEnabled(v),
+            icon="mdi:calendar-clock",
+        ),
+        ControlSwitch(
+            coordinator,
+            "FilterReminderEnabled",
+            "Filter Reminder",
+            lambda d: d.FilterReminderEnabled,
+            lambda d, v: d.setFilterReminderEnabled(v),
+            icon="mdi:bell-outline",
+        ),
+        ControlSwitch(
+            coordinator,
+            "rhControlHome",
+            "RH Control Home",
+            lambda d: d.RhControlHome,
+            lambda d, v: d.setRhControlHome(v),
+        ),
+        ControlSwitch(
+            coordinator,
+            "rhControlAway",
+            "RH Control Away",
+            lambda d: d.RhControlAway,
+            lambda d, v: d.setRhControlAway(v),
+        ),
+        ControlSwitch(
+            coordinator,
+            "rhControlBoost",
+            "RH Control Intensive",
+            lambda d: d.RhControlBoost,
+            lambda d, v: d.setRhControlBoost(v),
+        ),
+        ControlSwitch(
+            coordinator,
+            "bypassSetting",
+            "Bypass",
+            lambda d: d.BypassSetting,
+            lambda d, v: d.setBypassSetting(v),
+        ),
+        ControlSwitch(
+            coordinator,
+            "steplessBypass",
+            "Stepless Bypass",
+            lambda d: d.SteplessBypass,
+            lambda d, v: d.setSteplessBypass(v),
+        ),
+        ControlSwitch(
+            coordinator,
+            "coolHeatRecoveryEnabled",
+            "Cool Recovery Enabled",
+            lambda d: d.CoolHeatRecoveryEnabled,
+            lambda d, v: d.setCoolHeatRecoveryEnabled(v),
+        ),
+        ControlSwitch(
+            coordinator,
+            "coolHeatRecovery",
+            "Cool Recovery",
+            lambda d: d.CoolHeatRecovery,
+            lambda d, v: d.setCoolHeatRecovery(v),
+        ),
+    ]
+    if coordinator.data.co2SensorCount > 0:
+        entities += [
             ControlSwitch(
                 coordinator,
                 "co2ControlHome",
                 "CO2 Control Home",
                 lambda d: d.Co2ControlHome,
                 lambda d, v: d.setCo2ControlHome(v),
-            ),
-            ControlSwitch(
-                coordinator,
-                "rhControlAway",
-                "RH Control Away",
-                lambda d: d.RhControlAway,
-                lambda d, v: d.setRhControlAway(v),
             ),
             ControlSwitch(
                 coordinator,
@@ -68,48 +105,13 @@ async def async_setup_entry(
             ),
             ControlSwitch(
                 coordinator,
-                "rhControlBoost",
-                "RH Control Intensive",
-                lambda d: d.RhControlBoost,
-                lambda d, v: d.setRhControlBoost(v),
-            ),
-            ControlSwitch(
-                coordinator,
                 "co2ControlBoost",
                 "CO2 Control Intensive",
                 lambda d: d.Co2ControlBoost,
                 lambda d, v: d.setCo2ControlBoost(v),
             ),
-            ControlSwitch(
-                coordinator,
-                "bypassSetting",
-                "Bypass",
-                lambda d: d.BypassSetting,
-                lambda d, v: d.setBypassSetting(v),
-            ),
-            ControlSwitch(
-                coordinator,
-                "steplessBypass",
-                "Stepless Bypass",
-                lambda d: d.SteplessBypass,
-                lambda d, v: d.setSteplessBypass(v),
-            ),
-            ControlSwitch(
-                coordinator,
-                "coolHeatRecoveryEnabled",
-                "Cool Recovery Enabled",
-                lambda d: d.CoolHeatRecoveryEnabled,
-                lambda d, v: d.setCoolHeatRecoveryEnabled(v),
-            ),
-            ControlSwitch(
-                coordinator,
-                "coolHeatRecovery",
-                "Cool Recovery",
-                lambda d: d.CoolHeatRecovery,
-                lambda d, v: d.setCoolHeatRecovery(v),
-            ),
         ]
-    )
+    async_add_entities(entities)
 
 
 class KWLOnOffSwitch(EasyControls3BaseEntity, SwitchEntity):

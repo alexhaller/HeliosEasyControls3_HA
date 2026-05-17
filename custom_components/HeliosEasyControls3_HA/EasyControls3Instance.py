@@ -27,7 +27,6 @@ _BUF_FAN_SPEED = 64
 _BUF_TEMP_EXTRACT = 65
 _BUF_TEMP_EXHAUST = 66
 _BUF_TEMP_OUTDOOR = 67
-_BUF_TEMP_SUPPLY_CELL = 68
 _BUF_TEMP_SUPPLY = 69
 _BUF_EXTR_FAN_RPM = 72
 _BUF_SUPP_FAN_RPM = 73
@@ -81,7 +80,6 @@ _BUF_COOL_HEAT_REC = 220
 _BUF_HEAT_EXCHANGER = 222
 _BUF_MAX_CO2 = 223
 _BUF_MAX_RH = 225
-_BUF_BYPASS_MAX_OUTDOOR = 226
 _BUF_STEPLESS_BYPASS = 227
 _BUF_BYPASS_SETTING = 230
 _BUF_BOOST_DURATION = 246
@@ -125,7 +123,6 @@ _REG_COOL_HEAT_REC = 0x5026
 _REG_HEAT_EXCHANGER = 0x5028
 _REG_MAX_CO2 = 0x5029
 _REG_MAX_RH = 0x502B
-_REG_BYPASS_MAX_OUTDOOR = 0x502C
 _REG_STEPLESS_BYPASS = 0x502D
 _REG_BYPASS_SETTING = 0x5030
 _REG_BOOST_DURATION = 0x5040
@@ -204,7 +201,6 @@ class EasyControls3Instance:
         self._vocSensors: list[int | None] = [None] * 4
         self._boostTimerRemaining: int | None = None
         self._fireplaceTimerRemaining: int | None = None
-        self._supplyCellAirTemperature: float | None = None
         self._rhControlHome: bool | None = None
         self._co2ControlHome: bool | None = None
         self._rhControlAway: bool | None = None
@@ -224,7 +220,6 @@ class EasyControls3Instance:
         self._maxCO2: int | None = None
         self._bypassSetting: bool | None = None
         self._steplessBypass: bool | None = None
-        self._bypassMaxOutdoorTemp: float | None = None
         self._coolHeatRecoveryEnabled: bool | None = None
         self._coolHeatRecovery: bool | None = None
         self._heatExchanger: int | None = None
@@ -295,9 +290,6 @@ class EasyControls3Instance:
         self._SupplyTemperature = _kelvin_word_to_celsius(data, _BUF_TEMP_SUPPLY)
         self._IndoorTemperature = _kelvin_word_to_celsius(data, _BUF_TEMP_EXTRACT)
         self._ExhaustTemperature = _kelvin_word_to_celsius(data, _BUF_TEMP_EXHAUST)
-        self._supplyCellAirTemperature = _kelvin_word_to_celsius(
-            data, _BUF_TEMP_SUPPLY_CELL
-        )
         self._extractFanRPM = _word(data, _BUF_EXTR_FAN_RPM)
         self._supplyFanRPM = _word(data, _BUF_SUPP_FAN_RPM)
         self._AirRH = _low(data, _BUF_RH_VALUE)
@@ -309,7 +301,7 @@ class EasyControls3Instance:
             self._co2Sensors[i] = None if v == 0xFFFF else v
         for i in range(4):
             v = _word(data, _BUF_VOC_SENSOR_0 + i)
-            self._vocSensors[i] = None if v == 0xFFFF else v
+            self._vocSensors[i] = None if v == 0xFFFF or v == 0 else v
 
     def _parse_sw_state(self, data: bytes) -> None:
         state = _low(data, _BUF_STATE)
@@ -366,8 +358,14 @@ class EasyControls3Instance:
         self._heatExchanger = _low(data, _BUF_HEAT_EXCHANGER)
         self._maxCO2 = _word(data, _BUF_MAX_CO2)
         self._maxRH = _low(data, _BUF_MAX_RH)
-        self._bypassMaxOutdoorTemp = _kelvin_word_to_celsius(
-            data, _BUF_BYPASS_MAX_OUTDOOR
+        LOGGER.warning(
+            "DEBUG limits — CO2 raw word: %d (bytes hi=0x%02X lo=0x%02X), RH raw word: %d (bytes hi=0x%02X lo=0x%02X)",
+            _word(data, _BUF_MAX_CO2),
+            data[_BUF_MAX_CO2 * 2],
+            data[_BUF_MAX_CO2 * 2 + 1],
+            _word(data, _BUF_MAX_RH),
+            data[_BUF_MAX_RH * 2],
+            data[_BUF_MAX_RH * 2 + 1],
         )
         self._steplessBypass = bool(_low(data, _BUF_STEPLESS_BYPASS))
         self._bypassSetting = bool(_low(data, _BUF_BYPASS_SETTING))
@@ -485,9 +483,6 @@ class EasyControls3Instance:
 
     async def setFireplaceAirTempTarget(self, celsius: float) -> None:
         await self._set_temperature(_REG_FIREPLACE_AIR_TEMP, celsius)
-
-    async def setBypassMaxOutdoorTemp(self, celsius: float) -> None:
-        await self._set_temperature(_REG_BYPASS_MAX_OUTDOOR, celsius)
 
     async def setFireplaceExtractFanSpeed(self, speed: int) -> None:
         await self._set_int(_REG_FIREPLACE_EXTR_FAN, self.checkFanSpeedLimit(speed))
@@ -759,10 +754,6 @@ class EasyControls3Instance:
         return self._fireplaceTimerRemaining
 
     @property
-    def SupplyCellAirTemperature(self) -> float | None:
-        return self._supplyCellAirTemperature
-
-    @property
     def RhControlHome(self) -> bool | None:
         return self._rhControlHome
 
@@ -809,10 +800,6 @@ class EasyControls3Instance:
     @property
     def SteplessBypass(self) -> bool | None:
         return self._steplessBypass
-
-    @property
-    def bypassMaxOutdoorTemp(self) -> float | None:
-        return self._bypassMaxOutdoorTemp
 
     @property
     def CoolHeatRecoveryEnabled(self) -> bool | None:

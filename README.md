@@ -35,7 +35,7 @@ All entities belong to a single HA device. Within the device card:
 | Intensive / Extra / Individual Mode Timer Remaining | Minutes left in active mode |
 | Defrosting | Binary: defrost cycle active |
 | Emergency Stop | Binary: emergency stop activated |
-| Bypass Open | Binary: bypass relay state |
+| Bypass Status | Binary: bypass relay state |
 
 ### Sensors (diagnostic)
 | Entity | Description |
@@ -72,7 +72,6 @@ All entities belong to a single HA device. Within the device card:
 | Heat Exchanger | Select | Rotary / Cell ⚠️ enum values unverified on device |
 | Bypass | Switch | Manual bypass enable |
 | Stepless Bypass | Switch | Stepless bypass enable |
-| Bypass Max Outdoor Temperature | Number (°C) | Upper outdoor temp limit for bypass |
 | Cool Recovery Enabled | Switch | Plug removed confirmation |
 | Cool Recovery | Switch | Activate cool recovery mode |
 

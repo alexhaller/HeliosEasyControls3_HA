@@ -46,7 +46,7 @@ class StateSelect(EasyControls3BaseEntity, SelectEntity):
 class TempControlModeSelect(EasyControls3BaseEntity, SelectEntity):
     entity_category = EntityCategory.CONFIG
 
-    _VALUE_TO_OPTION: dict[int, str] = {0: "Supply", 1: "Extract", 2: "Extract+"}
+    _VALUE_TO_OPTION: dict[int, str] = {0: "Extract", 1: "Supply", 2: "Extract+"}
     _OPTION_TO_VALUE: dict[str, int] = {v: k for k, v in _VALUE_TO_OPTION.items()}
 
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
@@ -70,7 +70,7 @@ class TempControlModeSelect(EasyControls3BaseEntity, SelectEntity):
 class HeatExchangerSelect(EasyControls3BaseEntity, SelectEntity):
     entity_category = EntityCategory.CONFIG
 
-    _VALUE_TO_OPTION: dict[int, str] = {0: "Rotary", 1: "Cell"}
+    _VALUE_TO_OPTION: dict[int, str] = {0: "Enthalpy", 1: "Plastic"}
     _OPTION_TO_VALUE: dict[str, int] = {v: k for k, v in _VALUE_TO_OPTION.items()}
 
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:

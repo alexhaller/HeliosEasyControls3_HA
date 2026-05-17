@@ -55,12 +55,6 @@ async def async_setup_entry(
             "Exhaust Temperature",
             lambda d: d.ExhaustTemperature,
         ),
-        TemperatureSensor(
-            coordinator,
-            "SupplyCellAirTemperature",
-            "Supply Cell Air Temperature",
-            lambda d: d.SupplyCellAirTemperature,
-        ),
         HumiditySensor(coordinator),
         CurrentFanSpeed(coordinator),
         ExtractFanRPMSensor(coordinator),
@@ -439,7 +433,7 @@ class RHSensorCountSensor(EasyControls3BaseEntity, SensorEntity):
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_RHSensorCount"
-        self._attr_name = "RH Sensor Count"
+        self._attr_name = "External RH Sensor Count"
 
     @property
     def native_value(self) -> int:

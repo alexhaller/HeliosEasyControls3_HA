@@ -113,10 +113,10 @@ async def async_setup_entry(
                 lambda d, v: d.setFireplaceAirTempTarget(v),
             ),
             RHLimitNumber(coordinator),
-            CO2LimitNumber(coordinator),
-            BypassMaxOutdoorTempNumber(coordinator),
         ]
     )
+    if coordinator.data.co2SensorCount > 0:
+        async_add_entities([CO2LimitNumber(coordinator)])
 
 
 class FanSpeedNumber(EasyControls3BaseEntity, NumberEntity):
@@ -220,26 +220,4 @@ class CO2LimitNumber(EasyControls3BaseEntity, NumberEntity):
 
     async def async_set_native_value(self, value: float) -> None:
         await self._device.setMaxCO2(int(value))
-        await self.coordinator.async_request_refresh()
-
-
-class BypassMaxOutdoorTempNumber(EasyControls3BaseEntity, NumberEntity):
-    device_class = NumberDeviceClass.TEMPERATURE
-    native_unit_of_measurement = UnitOfTemperature.CELSIUS
-    native_min_value = -10.0
-    native_max_value = 40.0
-    native_step = 1.0
-    entity_category = EntityCategory.CONFIG
-
-    def __init__(self, coordinator: EasyControls3Coordinator) -> None:
-        super().__init__(coordinator)
-        self._attr_unique_id = f"{self._device.serialNR}_bypassMaxOutdoorTemp"
-        self._attr_name = "Bypass Max Outdoor Temperature"
-
-    @property
-    def native_value(self) -> float | None:
-        return self._device.bypassMaxOutdoorTemp
-
-    async def async_set_native_value(self, value: float) -> None:
-        await self._device.setBypassMaxOutdoorTemp(value)
         await self.coordinator.async_request_refresh()

@@ -61,7 +61,7 @@ class BypassBinarySensor(EasyControls3BaseEntity, BinarySensorEntity):
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_BypassOpen"
-        self._attr_name = "Bypass"
+        self._attr_name = "Bypass Status"
 
     @property
     def is_on(self) -> bool | None:
