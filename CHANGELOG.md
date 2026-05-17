@@ -1,3 +1,9 @@
+## [1.8.7](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v1.8.6...v1.8.7) (2026-05-17)
+
+### Bug Fixes
+
+* correct buffer offsets for CO2 and RH limits ([40fdb64](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/40fdb640c3f4c38dd3ca7eb5eaad71d01e076246))
+
 ## [1.8.6](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v1.8.5...v1.8.6) (2026-05-17)
 
 ### Bug Fixes
