@@ -1,3 +1,9 @@
+## [1.8.5](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v1.8.4...v1.8.5) (2026-05-17)
+
+### Bug Fixes
+
+* clean up entities, fix label errors and sensor detection ([a1ee8ba](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/a1ee8bab136774019efe8c2c895a2eea302da593))
+
 ## [1.8.4](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v1.8.3...v1.8.4) (2026-05-16)
 
 ### Bug Fixes
