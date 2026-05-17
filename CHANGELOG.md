@@ -1,3 +1,9 @@
+## [1.8.8](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v1.8.7...v1.8.8) (2026-05-17)
+
+### Bug Fixes
+
+* always show CO2/VOC limit regardless of sensor count ([4ef9688](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/4ef9688d3207a957c133cb9c0e79ee10af4887d2))
+
 ## [1.8.7](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v1.8.6...v1.8.7) (2026-05-17)
 
 ### Bug Fixes
