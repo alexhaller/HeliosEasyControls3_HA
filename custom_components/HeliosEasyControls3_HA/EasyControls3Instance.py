@@ -359,13 +359,11 @@ class EasyControls3Instance:
         self._maxCO2 = _word(data, _BUF_MAX_CO2)
         self._maxRH = _low(data, _BUF_MAX_RH)
         LOGGER.warning(
-            "DEBUG limits — CO2 raw word: %d (bytes hi=0x%02X lo=0x%02X), RH raw word: %d (bytes hi=0x%02X lo=0x%02X)",
-            _word(data, _BUF_MAX_CO2),
-            data[_BUF_MAX_CO2 * 2],
-            data[_BUF_MAX_CO2 * 2 + 1],
-            _word(data, _BUF_MAX_RH),
-            data[_BUF_MAX_RH * 2],
-            data[_BUF_MAX_RH * 2 + 1],
+            "DEBUG settings buffer offsets 182-260: %s",
+            "  ".join(
+                f"[{i}]=0x{data[i * 2]:02X}{data[i * 2 + 1]:02X}"
+                for i in range(182, 261)
+            ),
         )
         self._steplessBypass = bool(_low(data, _BUF_STEPLESS_BYPASS))
         self._bypassSetting = bool(_low(data, _BUF_BYPASS_SETTING))
