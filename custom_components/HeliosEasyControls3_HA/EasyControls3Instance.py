@@ -78,8 +78,8 @@ _BUF_BOOST_AIR_TEMP = 216
 _BUF_COOL_HEAT_REC_EN = 219
 _BUF_COOL_HEAT_REC = 220
 _BUF_HEAT_EXCHANGER = 222
-_BUF_MAX_CO2 = 223
-_BUF_MAX_RH = 225
+_BUF_MAX_RH = 192
+_BUF_MAX_CO2 = 193
 _BUF_STEPLESS_BYPASS = 227
 _BUF_BYPASS_SETTING = 230
 _BUF_BOOST_DURATION = 246
@@ -358,13 +358,6 @@ class EasyControls3Instance:
         self._heatExchanger = _low(data, _BUF_HEAT_EXCHANGER)
         self._maxCO2 = _word(data, _BUF_MAX_CO2)
         self._maxRH = _low(data, _BUF_MAX_RH)
-        LOGGER.warning(
-            "DEBUG settings buffer offsets 182-260: %s",
-            "  ".join(
-                f"[{i}]=0x{data[i * 2]:02X}{data[i * 2 + 1]:02X}"
-                for i in range(182, 261)
-            ),
-        )
         self._steplessBypass = bool(_low(data, _BUF_STEPLESS_BYPASS))
         self._bypassSetting = bool(_low(data, _BUF_BYPASS_SETTING))
         self._intensivDuration = _minutes_to_time(_word(data, _BUF_BOOST_DURATION))
