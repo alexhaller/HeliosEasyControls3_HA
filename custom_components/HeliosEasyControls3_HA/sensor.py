@@ -72,7 +72,7 @@ async def async_setup_entry(
         HeatRecoveryEfficiency(coordinator),
         ExtraTimerRemainingSensor(coordinator),
         BoostTimerRemainingSensor(coordinator),
-        FireplaceTimerRemainingSensor(coordinator),
+        IndividualTimerRemainingSensor(coordinator),
     ]
 
     for i in range(6):
@@ -385,7 +385,7 @@ class BoostTimerRemainingSensor(EasyControls3BaseEntity, SensorEntity):
         return self._device.BoostTimerRemaining
 
 
-class FireplaceTimerRemainingSensor(EasyControls3BaseEntity, SensorEntity):
+class IndividualTimerRemainingSensor(EasyControls3BaseEntity, SensorEntity):
     device_class = SensorDeviceClass.DURATION
     native_unit_of_measurement = UnitOfTime.MINUTES
     state_class = SensorStateClass.MEASUREMENT
@@ -399,7 +399,7 @@ class FireplaceTimerRemainingSensor(EasyControls3BaseEntity, SensorEntity):
 
     @property
     def native_value(self) -> int | None:
-        return self._device.FireplaceTimerRemaining
+        return self._device.IndividualTimerRemaining
 
 
 class HeatRecoveryEfficiency(EasyControls3BaseEntity, SensorEntity):

@@ -40,7 +40,7 @@ _BUF_STATE = 107
 _BUF_MODE = 108
 _BUF_DEFROSTING = 109
 _BUF_BOOST_TIMER = 110
-_BUF_FIREPLACE_TIMER = 111
+_BUF_INDIVIDUAL_TIMER = 111
 _BUF_EXTRA_TIMER = 112
 _BUF_WEEKLY_TIMER = 113
 _BUF_CELL_STATE = 114
@@ -55,13 +55,13 @@ _BUF_IO_BYPASS = 144
 
 # Settings (buf_start=182, reg_start=20480)
 _BUF_SUPPLY_HEATING_MODE = 183
-_BUF_FIREPLACE_EXTR_FAN = 189
-_BUF_FIREPLACE_SUPP_FAN = 190
+_BUF_INDIVIDUAL_EXTR_FAN = 189
+_BUF_INDIVIDUAL_SUPP_FAN = 190
 _BUF_EXTRA_AIR_TEMP = 195
 _BUF_EXTRA_EXTR_FAN = 196
 _BUF_EXTRA_SUPP_FAN = 197
 _BUF_EXTRA_TIME = 198
-_BUF_FIREPLACE_AIR_TEMP = 199
+_BUF_INDIVIDUAL_AIR_TEMP = 199
 _BUF_RH_CTRL_HOME = 201  # ⚠️ label may be swapped with Away
 _BUF_CO2_CTRL_HOME = 202  # ⚠️ label may be swapped with Away
 _BUF_AWAY_SPEED = 203
@@ -83,7 +83,7 @@ _BUF_MAX_CO2 = 193
 _BUF_STEPLESS_BYPASS = 227
 _BUF_BYPASS_SETTING = 230
 _BUF_BOOST_DURATION = 246
-_BUF_FIREPLACE_DURATION = 247
+_BUF_INDIVIDUAL_DURATION = 247
 _BUF_FILTER_INTERVAL = 239
 _BUF_FILTER_CHANGED_DAY = 248
 _BUF_FILTER_CHANGED_MONTH = 249
@@ -95,16 +95,16 @@ _BUF_FILTER_CHANGED_YEAR = 250
 _REG_STATE = 0x1201
 _REG_MODE = 0x1202
 _REG_BOOST_TIMER = 0x1204
-_REG_FIREPLACE_TIMER = 0x1205
+_REG_INDIVIDUAL_TIMER = 0x1205
 _REG_WEEKLY_TIMER = 0x1207
 _REG_SUPPLY_HEATING = 0x5001
-_REG_FIREPLACE_EXTR_FAN = 0x5007
-_REG_FIREPLACE_SUPP_FAN = 0x5008
+_REG_INDIVIDUAL_EXTR_FAN = 0x5007
+_REG_INDIVIDUAL_SUPP_FAN = 0x5008
 _REG_EXTRA_AIR_TEMP = 0x500D
 _REG_EXTRA_EXTR_FAN = 0x500E
 _REG_EXTRA_SUPP_FAN = 0x500F
 _REG_EXTRA_TIME = 0x5010
-_REG_FIREPLACE_AIR_TEMP = 0x5011
+_REG_INDIVIDUAL_AIR_TEMP = 0x5011
 _REG_RH_CTRL_HOME = 0x5013
 _REG_CO2_CTRL_HOME = 0x5014
 _REG_AWAY_FAN_SPEED = 0x5015
@@ -126,7 +126,7 @@ _REG_MAX_RH = 0x502B
 _REG_STEPLESS_BYPASS = 0x502D
 _REG_BYPASS_SETTING = 0x5030
 _REG_BOOST_DURATION = 0x5040
-_REG_FIREPLACE_DURATION = 0x5041
+_REG_INDIVIDUAL_DURATION = 0x5041
 
 _FAN_SPEED_REG: dict[KWLState, int] = {
     KWLState.AtHome: _REG_HOME_FAN_SPEED,
@@ -195,12 +195,12 @@ class EasyControls3Instance:
         self._awayAirTempTarget: float | None = None
         self._boostAirTempTarget: float | None = None
         self._extraAirTempTarget: float | None = None
-        self._fireplaceAirTempTarget: float | None = None
+        self._individualAirTempTarget: float | None = None
         self._rhSensors: list[int | None] = [None] * 6
         self._co2Sensors: list[int | None] = [None] * 6
         self._vocSensors: list[int | None] = [None] * 4
         self._boostTimerRemaining: int | None = None
-        self._fireplaceTimerRemaining: int | None = None
+        self._individualTimerRemaining: int | None = None
         self._rhControlHome: bool | None = None
         self._co2ControlHome: bool | None = None
         self._rhControlAway: bool | None = None
@@ -209,12 +209,12 @@ class EasyControls3Instance:
         self._co2ControlBoost: bool | None = None
         self._filterReminderEnabled: bool | None = None
         self._extraTimerRemaining: int | None = None
-        self._fireplaceExtractFanSpeed: int | None = None
-        self._fireplaceSupplyFanSpeed: int | None = None
+        self._individualExtractFanSpeed: int | None = None
+        self._individualSupplyFanSpeed: int | None = None
         self._extraExtractFanSpeed: int | None = None
         self._extraSupplyFanSpeed: int | None = None
         self._extraModeDuration: datetime.time | None = None
-        self._fireplaceModeDuration: datetime.time | None = None
+        self._individualModeDuration: datetime.time | None = None
         self._supplyHeatingAdjustMode: int | None = None
         self._maxRH: int | None = None
         self._maxCO2: int | None = None
@@ -306,7 +306,7 @@ class EasyControls3Instance:
     def _parse_sw_state(self, data: bytes) -> None:
         state = _low(data, _BUF_STATE)
         boost = _word(data, _BUF_BOOST_TIMER)
-        fire = _word(data, _BUF_FIREPLACE_TIMER)
+        fire = _word(data, _BUF_INDIVIDUAL_TIMER)
         if fire:
             self._instanceState = KWLState.Individual
         elif boost:
@@ -318,7 +318,7 @@ class EasyControls3Instance:
         self._isOn = _low(data, _BUF_MODE) == 0
         self._defrosting = bool(_low(data, _BUF_DEFROSTING))
         self._boostTimerRemaining = boost
-        self._fireplaceTimerRemaining = fire
+        self._individualTimerRemaining = fire
         self._extraTimerRemaining = _word(data, _BUF_EXTRA_TIMER)
         self._weeklyTimerEnabled = bool(_low(data, _BUF_WEEKLY_TIMER))
         cell_raw = _low(data, _BUF_CELL_STATE)
@@ -334,14 +334,14 @@ class EasyControls3Instance:
 
     def _parse_settings(self, data: bytes) -> None:
         self._supplyHeatingAdjustMode = _low(data, _BUF_SUPPLY_HEATING_MODE)
-        self._fireplaceExtractFanSpeed = _low(data, _BUF_FIREPLACE_EXTR_FAN)
-        self._fireplaceSupplyFanSpeed = _low(data, _BUF_FIREPLACE_SUPP_FAN)
+        self._individualExtractFanSpeed = _low(data, _BUF_INDIVIDUAL_EXTR_FAN)
+        self._individualSupplyFanSpeed = _low(data, _BUF_INDIVIDUAL_SUPP_FAN)
         self._extraAirTempTarget = _kelvin_word_to_celsius(data, _BUF_EXTRA_AIR_TEMP)
         self._extraExtractFanSpeed = _low(data, _BUF_EXTRA_EXTR_FAN)
         self._extraSupplyFanSpeed = _low(data, _BUF_EXTRA_SUPP_FAN)
         self._extraModeDuration = _minutes_to_time(_word(data, _BUF_EXTRA_TIME))
-        self._fireplaceAirTempTarget = _kelvin_word_to_celsius(
-            data, _BUF_FIREPLACE_AIR_TEMP
+        self._individualAirTempTarget = _kelvin_word_to_celsius(
+            data, _BUF_INDIVIDUAL_AIR_TEMP
         )
         self._rhControlHome = bool(_low(data, _BUF_RH_CTRL_HOME))
         self._co2ControlHome = bool(_low(data, _BUF_CO2_CTRL_HOME))
@@ -361,8 +361,8 @@ class EasyControls3Instance:
         self._steplessBypass = bool(_low(data, _BUF_STEPLESS_BYPASS))
         self._bypassSetting = bool(_low(data, _BUF_BYPASS_SETTING))
         self._intensivDuration = _minutes_to_time(_word(data, _BUF_BOOST_DURATION))
-        self._fireplaceModeDuration = _minutes_to_time(
-            _word(data, _BUF_FIREPLACE_DURATION)
+        self._individualModeDuration = _minutes_to_time(
+            _word(data, _BUF_INDIVIDUAL_DURATION)
         )
         self._filterInterval = _low(data, _BUF_FILTER_INTERVAL)
         day = _low(data, _BUF_FILTER_CHANGED_DAY)
@@ -383,21 +383,21 @@ class EasyControls3Instance:
     async def switchMode(self, wantedKWLState: KWLState) -> None:
         if wantedKWLState is KWLState.AtHome:
             cmd = self._build_write_command(
-                (_REG_STATE, 0), (_REG_BOOST_TIMER, 0), (_REG_FIREPLACE_TIMER, 0)
+                (_REG_STATE, 0), (_REG_BOOST_TIMER, 0), (_REG_INDIVIDUAL_TIMER, 0)
             )
         elif wantedKWLState is KWLState.Away:
             cmd = self._build_write_command(
-                (_REG_STATE, 1), (_REG_BOOST_TIMER, 0), (_REG_FIREPLACE_TIMER, 0)
+                (_REG_STATE, 1), (_REG_BOOST_TIMER, 0), (_REG_INDIVIDUAL_TIMER, 0)
             )
         elif wantedKWLState is KWLState.Intensive:
             assert self._intensivDuration is not None
             duration = self._intensivDuration.hour * 60 + self._intensivDuration.minute
             cmd = self._build_write_command(
-                (_REG_BOOST_TIMER, duration), (_REG_FIREPLACE_TIMER, 0)
+                (_REG_BOOST_TIMER, duration), (_REG_INDIVIDUAL_TIMER, 0)
             )
         elif wantedKWLState is KWLState.Individual:
             cmd = self._build_write_command(
-                (_REG_BOOST_TIMER, 0), (_REG_FIREPLACE_TIMER, 0x96)
+                (_REG_BOOST_TIMER, 0), (_REG_INDIVIDUAL_TIMER, 0x96)
             )
         else:
             raise TypeError("wantedKWLState must be an instance of KWLState Enum")
@@ -472,14 +472,14 @@ class EasyControls3Instance:
     async def setExtraAirTempTarget(self, celsius: float) -> None:
         await self._set_temperature(_REG_EXTRA_AIR_TEMP, celsius)
 
-    async def setFireplaceAirTempTarget(self, celsius: float) -> None:
-        await self._set_temperature(_REG_FIREPLACE_AIR_TEMP, celsius)
+    async def setIndividualAirTempTarget(self, celsius: float) -> None:
+        await self._set_temperature(_REG_INDIVIDUAL_AIR_TEMP, celsius)
 
-    async def setFireplaceExtractFanSpeed(self, speed: int) -> None:
-        await self._set_int(_REG_FIREPLACE_EXTR_FAN, self.checkFanSpeedLimit(speed))
+    async def setIndividualExtractFanSpeed(self, speed: int) -> None:
+        await self._set_int(_REG_INDIVIDUAL_EXTR_FAN, self.checkFanSpeedLimit(speed))
 
-    async def setFireplaceSupplyFanSpeed(self, speed: int) -> None:
-        await self._set_int(_REG_FIREPLACE_SUPP_FAN, self.checkFanSpeedLimit(speed))
+    async def setIndividualSupplyFanSpeed(self, speed: int) -> None:
+        await self._set_int(_REG_INDIVIDUAL_SUPP_FAN, self.checkFanSpeedLimit(speed))
 
     async def setExtraExtractFanSpeed(self, speed: int) -> None:
         await self._set_int(_REG_EXTRA_EXTR_FAN, self.checkFanSpeedLimit(speed))
@@ -490,9 +490,9 @@ class EasyControls3Instance:
     async def setExtraModeDuration(self, t: datetime.time) -> None:
         await self._set_int(_REG_EXTRA_TIME, max(1, min(0x5A0, t.hour * 60 + t.minute)))
 
-    async def setFireplaceModeDuration(self, t: datetime.time) -> None:
+    async def setIndividualModeDuration(self, t: datetime.time) -> None:
         await self._set_int(
-            _REG_FIREPLACE_DURATION, max(1, min(0x5A0, t.hour * 60 + t.minute))
+            _REG_INDIVIDUAL_DURATION, max(1, min(0x5A0, t.hour * 60 + t.minute))
         )
 
     async def setWeeklyTimerEnabled(self, enabled: bool) -> None:
@@ -705,20 +705,20 @@ class EasyControls3Instance:
         return self._extraAirTempTarget
 
     @property
-    def FireplaceAirTempTarget(self) -> float | None:
-        return self._fireplaceAirTempTarget
+    def IndividualAirTempTarget(self) -> float | None:
+        return self._individualAirTempTarget
 
     @property
     def ExtraTimerRemaining(self) -> int | None:
         return self._extraTimerRemaining
 
     @property
-    def FireplaceExtractFanSpeed(self) -> int | None:
-        return self._fireplaceExtractFanSpeed
+    def IndividualExtractFanSpeed(self) -> int | None:
+        return self._individualExtractFanSpeed
 
     @property
-    def FireplaceSupplyFanSpeed(self) -> int | None:
-        return self._fireplaceSupplyFanSpeed
+    def IndividualSupplyFanSpeed(self) -> int | None:
+        return self._individualSupplyFanSpeed
 
     @property
     def ExtraExtractFanSpeed(self) -> int | None:
@@ -733,16 +733,16 @@ class EasyControls3Instance:
         return self._extraModeDuration
 
     @property
-    def FireplaceModeDuration(self) -> datetime.time | None:
-        return self._fireplaceModeDuration
+    def IndividualModeDuration(self) -> datetime.time | None:
+        return self._individualModeDuration
 
     @property
     def BoostTimerRemaining(self) -> int | None:
         return self._boostTimerRemaining
 
     @property
-    def FireplaceTimerRemaining(self) -> int | None:
-        return self._fireplaceTimerRemaining
+    def IndividualTimerRemaining(self) -> int | None:
+        return self._individualTimerRemaining
 
     @property
     def RhControlHome(self) -> bool | None:

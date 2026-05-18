@@ -40,8 +40,8 @@ async def async_setup_entry(
                 coordinator,
                 "fireplaceModeDuration",
                 "Individual Mode Duration",
-                lambda d: d.FireplaceModeDuration,
-                lambda d, v: d.setFireplaceModeDuration(v),
+                lambda d: d.IndividualModeDuration,
+                lambda d, v: d.setIndividualModeDuration(v),
             ),
         ]
     )
