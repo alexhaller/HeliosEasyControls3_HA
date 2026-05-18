@@ -51,14 +51,14 @@ async def async_setup_entry(
             ),
             FanSpeedNumber(
                 coordinator,
-                "fireplaceExtractFanSpeed",
+                "individualExtractFanSpeed",
                 "Individual Extract Fan Speed",
                 lambda d: d.IndividualExtractFanSpeed,
                 lambda d, v: d.setIndividualExtractFanSpeed(v),
             ),
             FanSpeedNumber(
                 coordinator,
-                "fireplaceSupplyFanSpeed",
+                "individualSupplyFanSpeed",
                 "Individual Supply Fan Speed",
                 lambda d: d.IndividualSupplyFanSpeed,
                 lambda d, v: d.setIndividualSupplyFanSpeed(v),
@@ -107,7 +107,7 @@ async def async_setup_entry(
             ),
             AirTempTargetNumber(
                 coordinator,
-                "fireplaceAirTempTarget",
+                "individualAirTempTarget",
                 "Individual Air Temp Target",
                 lambda d: d.IndividualAirTempTarget,
                 lambda d, v: d.setIndividualAirTempTarget(v),

@@ -394,7 +394,7 @@ class IndividualTimerRemainingSensor(EasyControls3BaseEntity, SensorEntity):
 
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
-        self._attr_unique_id = f"{self._device.serialNR}_FireplaceTimerRemaining"
+        self._attr_unique_id = f"{self._device.serialNR}_IndividualTimerRemaining"
         self._attr_name = "Individual Mode Timer Remaining"
 
     @property

@@ -38,7 +38,7 @@ async def async_setup_entry(
             ),
             DurationEntity(
                 coordinator,
-                "fireplaceModeDuration",
+                "individualModeDuration",
                 "Individual Mode Duration",
                 lambda d: d.IndividualModeDuration,
                 lambda d, v: d.setIndividualModeDuration(v),
