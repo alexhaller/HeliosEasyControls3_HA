@@ -1,3 +1,17 @@
+## [1.8.9](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v1.8.8...v1.8.9) (2026-05-18)
+
+### Bug Fixes
+
+* rename fireplace unique IDs to individual ([e66bd38](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/e66bd38501fd62365b7ba62b75fcb834703ac0ad))
+
+### Documentation
+
+* overhaul README — update entities, fix register map, resolve verified items ([e3aa49d](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/e3aa49dfeb3b2734e0fd09d804380d1c7d143cb3))
+
+### Code Refactoring
+
+* rename fireplace -> individual in all internal identifiers ([11aef41](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/11aef41f02c75650beaebae1f782eb2e31ae4aa2))
+
 ## [1.8.8](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v1.8.7...v1.8.8) (2026-05-17)
 
 ### Bug Fixes
