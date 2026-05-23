@@ -1,3 +1,9 @@
+## [1.8.10](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v1.8.9...v1.8.10) (2026-05-23)
+
+### Bug Fixes
+
+* remove websockets from requirements and add import_executor ([be7deba](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/be7debad556fac7d3d7027063ae26a740711479a))
+
 ## [1.8.9](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v1.8.8...v1.8.9) (2026-05-18)
 
 ### Bug Fixes
