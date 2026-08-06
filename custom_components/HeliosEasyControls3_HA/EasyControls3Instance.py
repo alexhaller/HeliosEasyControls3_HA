@@ -1,3 +1,4 @@
+# ruff: noqa: N999 -- module/package names are fixed by the HA domain and the upstream project
 import asyncio
 import datetime
 import logging
@@ -415,7 +416,7 @@ class EasyControls3Instance:
     # ---------------------------------------------------------------------------
 
     def checkFanSpeedLimit(self, requestedFanSpeed: int) -> int:
-        return max(1, min(100, round(requestedFanSpeed)))
+        return max(1, min(100, requestedFanSpeed))
 
     async def setFanSpeed(self, requestedFanSpeed: int, mode: KWLState) -> None:
         if mode not in _FAN_SPEED_REG:
@@ -549,6 +550,7 @@ class EasyControls3Instance:
             self._parseData(response)
             return True
         except Exception:
+            LOGGER.debug("test_connection failed", exc_info=True)
             return False
 
     # ---------------------------------------------------------------------------

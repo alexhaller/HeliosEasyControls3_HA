@@ -33,8 +33,10 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with:
-          python-version: "3.13"
-      - run: pip install ruff mypy homeassistant "websockets>=16.0" types-python-dateutil pip-audit
+          python-version: "3.14"
+      # ruff and mypy are pinned: both promote new checks in minor releases,
+      # which silently turns a green build red. Bump them deliberately.
+      - run: pip install ruff==0.16.1 mypy==2.3.0 homeassistant "websockets>=16.0" types-python-dateutil pip-audit
       - run: ruff check .
       - run: ruff format --check .
       - run: mypy custom_components/

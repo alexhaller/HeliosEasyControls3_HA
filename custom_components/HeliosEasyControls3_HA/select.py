@@ -1,6 +1,8 @@
+from typing import ClassVar
+
 from homeassistant.components.select import SelectEntity
-from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -46,8 +48,14 @@ class StateSelect(EasyControls3BaseEntity, SelectEntity):
 class TempControlModeSelect(EasyControls3BaseEntity, SelectEntity):
     entity_category = EntityCategory.CONFIG
 
-    _VALUE_TO_OPTION: dict[int, str] = {0: "Extract", 1: "Supply", 2: "Extract+"}
-    _OPTION_TO_VALUE: dict[str, int] = {v: k for k, v in _VALUE_TO_OPTION.items()}
+    _VALUE_TO_OPTION: ClassVar[dict[int, str]] = {
+        0: "Extract",
+        1: "Supply",
+        2: "Extract+",
+    }
+    _OPTION_TO_VALUE: ClassVar[dict[str, int]] = {
+        v: k for k, v in _VALUE_TO_OPTION.items()
+    }
 
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
@@ -70,8 +78,10 @@ class TempControlModeSelect(EasyControls3BaseEntity, SelectEntity):
 class HeatExchangerSelect(EasyControls3BaseEntity, SelectEntity):
     entity_category = EntityCategory.CONFIG
 
-    _VALUE_TO_OPTION: dict[int, str] = {0: "Enthalpy", 1: "Plastic"}
-    _OPTION_TO_VALUE: dict[str, int] = {v: k for k, v in _VALUE_TO_OPTION.items()}
+    _VALUE_TO_OPTION: ClassVar[dict[int, str]] = {0: "Enthalpy", 1: "Plastic"}
+    _OPTION_TO_VALUE: ClassVar[dict[str, int]] = {
+        v: k for k, v in _VALUE_TO_OPTION.items()
+    }
 
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)

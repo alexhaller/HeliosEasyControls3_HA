@@ -1,3 +1,4 @@
+# ruff: noqa: N999 -- module/package names are fixed by the HA domain and the upstream project
 """EasyControls3 Home Assistant integration."""
 
 import logging
