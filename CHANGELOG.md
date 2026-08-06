@@ -1,3 +1,5 @@
+## [1.8.12](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v1.8.11...v1.8.12) (2026-08-06)
+
 ## [1.8.10](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v1.8.9...v1.8.10) (2026-05-23)
 
 ### Bug Fixes
