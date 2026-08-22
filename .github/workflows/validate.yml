@@ -14,14 +14,14 @@ jobs:
     name: hassfest
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: home-assistant/actions/hassfest@master
 
   hacs:
     name: HACS
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: hacs/action@main
         with:
           category: integration
@@ -30,13 +30,13 @@ jobs:
     name: ruff + mypy + pip-audit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.14"
       # ruff and mypy are pinned: both promote new checks in minor releases,
       # which silently turns a green build red. Bump them deliberately.
-      - run: pip install ruff==0.16.1 mypy==2.3.0 homeassistant "websockets>=16.0" types-python-dateutil pip-audit
+      - run: pip install ruff==0.16.4 mypy==2.3.1 homeassistant "websockets>=16.0" types-python-dateutil pip-audit
       - run: ruff check .
       - run: ruff format --check .
       - run: mypy custom_components/
