@@ -5,12 +5,18 @@ import logging
 from typing import cast
 
 from dateutil.relativedelta import relativedelta
+from homeassistant.exceptions import HomeAssistantError
 from websockets.asyncio.client import connect
 
 from .deviceList import deviceInfo
 from .KWLStates import CellState, KWLState
 
 LOGGER = logging.getLogger(__name__)
+
+
+class WriteRejected(HomeAssistantError):
+    """The device did not acknowledge a write command."""
+
 
 # ---------------------------------------------------------------------------
 # Read buffer offsets  (byte index = offset * 2 / offset * 2 + 1)
@@ -248,10 +254,12 @@ class EasyControls3Instance:
         return bytes(payload)
 
     def _check_write_response(self, response: bytes, context: str) -> None:
-        if response == _WRITE_OK:
-            LOGGER.debug("%s: write acknowledged", context)
-        else:
-            LOGGER.warning("%s: unexpected response from device", context)
+        if response != _WRITE_OK:
+            raise WriteRejected(
+                f"{context}: device did not acknowledge the write "
+                f"(response {response.hex()})"
+            )
+        LOGGER.debug("%s: write acknowledged", context)
 
     async def _exchangeData(self, request: bytes) -> bytes:
         async with self._lock, connect(self._url) as websocket:
