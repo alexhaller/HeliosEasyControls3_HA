@@ -2,11 +2,7 @@ from collections.abc import Awaitable, Callable
 
 from homeassistant.components.number import NumberDeviceClass, NumberEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import (
-    CONCENTRATION_PARTS_PER_MILLION,
-    PERCENTAGE,
-    UnitOfTemperature,
-)
+from homeassistant.const import PERCENTAGE, UnitOfRatio, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -205,7 +201,7 @@ class CO2LimitNumber(EasyControls3BaseEntity, NumberEntity):
     native_min_value = 400.0
     native_max_value = 2000.0
     native_step = 50.0
-    native_unit_of_measurement = CONCENTRATION_PARTS_PER_MILLION
+    native_unit_of_measurement = UnitOfRatio.PARTS_PER_MILLION
     entity_category = EntityCategory.CONFIG
 
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
