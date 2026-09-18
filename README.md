@@ -69,7 +69,7 @@ All entities belong to a single HA device. Within the device card:
 | Individual Mode Duration | Time | Duration for individual mode timer |
 | Weekly Timer | Switch | Enable weekly schedule program |
 | Filter Reminder | Switch | Enable filter change reminder |
-| Temperature Control Mode | Select | Supply / Extract / Extract+ |
+| Temperature Control Mode | Select | Supply / Extract / Extract+ (Zuluft / Abluft / Abluft Plus) |
 | Heat Exchanger | Select | Enthalpy / Plastic |
 | Bypass | Switch | Manual bypass enable |
 | Stepless Bypass | Switch | Stepless bypass enable |
@@ -231,20 +231,18 @@ Full Vallox API register reference: https://github.com/yozik04/vallox_websocket_
 
 > ⚠️ The Vallox open-source API uses a completely different layout in the 0x5000 range. The register names and assignments below are Helios-specific, derived from reverse engineering and verified against a real device.
 
-> ⚠️ **Known label bug**: The Home/Away grouping for RH/CO2 control switches (0x5013/0x5014 and 0x5019/0x501A) appears to be swapped relative to the surrounding fan speed and temperature registers. Needs verification.
-
-> ⚠️ **Read vs. write registers**: For RH Limit and CO2/VOC Limit the device returns the current value at a different buffer offset than the write register address. See notes below.
+> ℹ️ **Profile block layout**: each profile occupies four consecutive registers — RH control, CO2 control, fan speed, air temp target — at a stride of 6: Away at 0x5013, Home at 0x5019, Intensive at 0x501F. Verified against the unit's own web UI.
 
 | Reg | Hex | Buf | Name (Helios-specific) | Status | Notes |
 |---|---|---|---|---|---|
 | 20480 | 0x5000 | 182 | — | ❌ not read | unknown |
-| 20481 | 0x5001 | 183 | A_CYC_SUPPLY_HEATING_ADJUST_MODE | ✅ read/write | 0=Extract 1=Supply 2=Extract+ (verified) |
+| 20481 | 0x5001 | 183 | A_CYC_SUPPLY_HEATING_ADJUST_MODE | ✅ read/write | 1=Supply 2=Extract 3=Extract+ (verified); **0 is rejected by the device** |
 | 20482–20486 | 0x5002–0x5006 | 184–188 | — | ❌ not read | unknown |
 | 20487 | 0x5007 | 189 | A_CYC_FIREPLACE_EXTR_FAN | ✅ read/write | Individual extract fan % |
 | 20488 | 0x5008 | 190 | A_CYC_FIREPLACE_SUPP_FAN | ✅ read/write | Individual supply fan % |
 | 20489 | 0x5009 | 191 | A_CYC_PARTIAL_BYPASS_DISABLED | ❌ not read | Partial bypass disabled flag |
-| 20490 | 0x500A | 192 | A_CYC_RH_BASIC_LEVEL | ✅ read | **Actual read location for RH Limit** (write goes to 0x502B) |
-| 20491 | 0x500B | 193 | A_CYC_CO2_THRESHOLD | ✅ read | **Actual read location for CO2/VOC Limit** (write goes to 0x5029) |
+| 20490 | 0x500A | 192 | A_CYC_RH_BASIC_LEVEL | ✅ read/write | RH Limit % (0x502B is rejected by the device) |
+| 20491 | 0x500B | 193 | A_CYC_CO2_THRESHOLD | ✅ read/write | CO2/VOC Limit ppm (0x5029 is rejected by the device) |
 | 20492 | 0x500C | 194 | A_CYC_EXTRA_ENABLED | ❌ not read | Extra mode enabled |
 | 20493 | 0x500D | 195 | A_CYC_EXTRA_AIR_TEMP_TARGET | ✅ read/write | Extra air temp target (°C) |
 | 20494 | 0x500E | 196 | A_CYC_EXTRA_EXTR_FAN | ✅ read/write | Extra extract fan % |
@@ -252,14 +250,14 @@ Full Vallox API register reference: https://github.com/yozik04/vallox_websocket_
 | 20496 | 0x5010 | 198 | A_CYC_EXTRA_TIME | ✅ read/write | Extra mode duration (min) |
 | 20497 | 0x5011 | 199 | A_CYC_FIREPLACE_AIR_TEMP_TARGET | ✅ read/write | Individual air temp target (°C) |
 | 20498 | 0x5012 | 200 | — | ❌ not read | unknown |
-| 20499 | 0x5013 | 201 | A_CYC_AWAY_RH_CTRL_ENABLED ⚠️ | ✅ read/write | Labeled "Home" in HA — may be Away |
-| 20500 | 0x5014 | 202 | A_CYC_AWAY_CO2_CTRL_ENABLED ⚠️ | ✅ read/write | Labeled "Home" in HA — may be Away |
+| 20499 | 0x5013 | 201 | A_CYC_AWAY_RH_CTRL_ENABLED | ✅ read/write | Away RH control (verified) |
+| 20500 | 0x5014 | 202 | A_CYC_AWAY_CO2_CTRL_ENABLED | ✅ read/write | Away CO2 control |
 | 20501 | 0x5015 | 203 | A_CYC_AWAY_SPEED_SETTING | ✅ read | Away fan speed % |
 | 20502 | 0x5016 | 204 | A_CYC_AWAY_AIR_TEMP_TARGET | ✅ read/write | Away air temp target (°C) |
 | 20503 | 0x5017 | 205 | A_CYC_FILTER_REMINDER_DISABLED | ✅ read/write | Inverted: 1=reminder off |
 | 20504 | 0x5018 | 206 | A_CYC_FILTER_REMINDER_AUTOMATIC_TIME | ❌ not read | Automatic filter reminder interval |
-| 20505 | 0x5019 | 207 | A_CYC_HOME_RH_CTRL_ENABLED ⚠️ | ✅ read/write | Labeled "Away" in HA — may be Home |
-| 20506 | 0x501A | 208 | A_CYC_HOME_CO2_CTRL_ENABLED ⚠️ | ✅ read/write | Labeled "Away" in HA — may be Home |
+| 20505 | 0x5019 | 207 | A_CYC_HOME_RH_CTRL_ENABLED | ✅ read/write | Home RH control (verified) |
+| 20506 | 0x501A | 208 | A_CYC_HOME_CO2_CTRL_ENABLED | ✅ read/write | Home CO2 control |
 | 20507 | 0x501B | 209 | A_CYC_HOME_SPEED_SETTING | ✅ read | AtHome fan speed % |
 | 20508 | 0x501C | 210 | A_CYC_HOME_AIR_TEMP_TARGET | ✅ read/write | Home air temp target (°C) |
 | 20509 | 0x501D | 211 | A_CYC_DEFROST_RPM_LIMIT | ❌ not read | Defrost fan speed limit |
@@ -344,5 +342,4 @@ Full Vallox API register reference: https://github.com/yozik04/vallox_websocket_
 
 | Item | Action needed |
 |---|---|
-| RH/CO2 Control Home/Away labels (0x5013/0x5019) | Verify on device: enable "RH Control Home" and check which profile changes |
 | Settings 0x5025–0x5028 semantics | Confirm Helios firmware meaning for cool recovery / relay mode / digital input registers |

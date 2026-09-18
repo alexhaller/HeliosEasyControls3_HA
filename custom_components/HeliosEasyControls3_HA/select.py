@@ -48,10 +48,11 @@ class StateSelect(EasyControls3BaseEntity, SelectEntity):
 class TempControlModeSelect(EasyControls3BaseEntity, SelectEntity):
     entity_category = EntityCategory.CONFIG
 
+    # 0 is not a valid value for this register — the device rejects the write.
     _VALUE_TO_OPTION: ClassVar[dict[int, str]] = {
-        0: "Extract",
         1: "Supply",
-        2: "Extract+",
+        2: "Extract",
+        3: "Extract+",
     }
     _OPTION_TO_VALUE: ClassVar[dict[str, int]] = {
         v: k for k, v in _VALUE_TO_OPTION.items()
