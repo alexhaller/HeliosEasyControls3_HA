@@ -1,3 +1,10 @@
+## [1.8.13](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v1.8.12...v1.8.13) (2026-09-18)
+
+### Bug Fixes
+
+* correct register and value mappings verified against the device ([118323e](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/118323ef1feedde6a57df10a23a3d33dbcacce1f))
+* surface writes the device refuses instead of only logging them ([c6a151f](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/c6a151f745e4378b36d3d80a811d39c519499c64))
+
 ## [1.8.12](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v1.8.11...v1.8.12) (2026-08-06)
 
 ## [1.8.10](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v1.8.9...v1.8.10) (2026-05-23)
