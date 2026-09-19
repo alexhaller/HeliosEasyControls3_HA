@@ -1,3 +1,13 @@
+## [1.8.14](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v1.8.13...v1.8.14) (2026-09-19)
+
+### Bug Fixes
+
+* point five settings at the registers the firmware actually defines ([774b11a](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/774b11a830073b252906d3d401abe6eddc0bad23))
+
+### Documentation
+
+* record the firmware register table and how to derive mappings ([2fe0721](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/2fe07211a523db6fab44fd7348da9eb128dad93d))
+
 ## [1.8.13](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v1.8.12...v1.8.13) (2026-09-18)
 
 ### Bug Fixes
