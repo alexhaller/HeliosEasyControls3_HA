@@ -1,3 +1,13 @@
+## [1.9.0](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v1.8.15...v1.9.0) (2026-09-19)
+
+### Features
+
+* require HA 2026.7.0 and use UnitOfRatio for the ppm units ([df48b22](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/df48b225092fba6852cf48d1ea62add348b2a301))
+
+### Documentation
+
+* record why CONCENTRATION_PARTS_PER_MILLION must stay ([2820cb7](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/2820cb795ddb3f6b615847355b61a1474ca25070))
+
 ## [1.8.15](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v1.8.14...v1.8.15) (2026-09-19)
 
 ### Bug Fixes
