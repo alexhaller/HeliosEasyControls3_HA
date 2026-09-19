@@ -49,13 +49,11 @@ downgrade that back to a log line.
 
 ## Project-specific notes
 
-- **`CONCENTRATION_PARTS_PER_MILLION` stays.** HA deprecated it in favour of
-  `UnitOfRatio.PARTS_PER_MILLION`, and running instances log a warning saying so,
-  but `UnitOfRatio` was only added in **HA Core 2026.7.0**. `hacs.json` declares a
-  minimum of 2026.3.0, so switching would raise `ImportError` on 2026.3–2026.6.
-  Do not "fix" the deprecation warning until that minimum is raised to 2026.7.0;
-  the constant is not removed until HA Core 2027.8. This has already been changed
-  and reverted once (e1687e2, 31226f3).
+- **Minimum HA Core is 2026.7.0** (`hacs.json`), because the ppm units use
+  `UnitOfRatio.PARTS_PER_MILLION`, which HA only added in 2026.7.0. Lowering the
+  minimum without reverting to `CONCENTRATION_PARTS_PER_MILLION` raises
+  `ImportError` on older cores. This pair was changed, reverted and changed again
+  (e1687e2, 31226f3) — keep the two in sync.
 
 - **pip-audit** domain for this project is `HeliosEasyControls3_HA`; the only listed requirement is `python-dateutil` (`websockets` is bundled by HA core and deliberately not listed).
 - **Brand assets**: `custom_components/HeliosEasyControls3_HA/brand/icon.png` and `brands/icon.png` (Helios red #C62828, 512×512 PNG).

@@ -7,8 +7,8 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
-    CONCENTRATION_PARTS_PER_MILLION,
     PERCENTAGE,
+    UnitOfRatio,
     UnitOfTemperature,
     UnitOfTime,
 )
@@ -150,7 +150,7 @@ class RHSensor(EasyControls3BaseEntity, SensorEntity):
 
 class CO2Sensor(EasyControls3BaseEntity, SensorEntity):
     device_class = SensorDeviceClass.CO2
-    native_unit_of_measurement = CONCENTRATION_PARTS_PER_MILLION
+    native_unit_of_measurement = UnitOfRatio.PARTS_PER_MILLION
     state_class = SensorStateClass.MEASUREMENT
     suggested_display_precision = 0
 
@@ -171,7 +171,7 @@ class CO2Sensor(EasyControls3BaseEntity, SensorEntity):
 
 class VOCSensor(EasyControls3BaseEntity, SensorEntity):
     device_class = SensorDeviceClass.VOLATILE_ORGANIC_COMPOUNDS_PARTS
-    native_unit_of_measurement = CONCENTRATION_PARTS_PER_MILLION
+    native_unit_of_measurement = UnitOfRatio.PARTS_PER_MILLION
     state_class = SensorStateClass.MEASUREMENT
     suggested_display_precision = 0
 
