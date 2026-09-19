@@ -48,11 +48,11 @@ class StateSelect(EasyControls3BaseEntity, SelectEntity):
 class TempControlModeSelect(EasyControls3BaseEntity, SelectEntity):
     entity_category = EntityCategory.CONFIG
 
-    # 0 is not a valid value for this register — the device rejects the write.
+    # A_CYC_SUPPLY_HEATING_ADJUST_MODE: supply air / extract air / cooling mode
     _VALUE_TO_OPTION: ClassVar[dict[int, str]] = {
-        1: "Supply",
-        2: "Extract",
-        3: "Extract+",
+        0: "Supply",
+        1: "Extract",
+        2: "Extract+",
     }
     _OPTION_TO_VALUE: ClassVar[dict[str, int]] = {
         v: k for k, v in _VALUE_TO_OPTION.items()
@@ -79,7 +79,8 @@ class TempControlModeSelect(EasyControls3BaseEntity, SelectEntity):
 class HeatExchangerSelect(EasyControls3BaseEntity, SelectEntity):
     entity_category = EntityCategory.CONFIG
 
-    _VALUE_TO_OPTION: ClassVar[dict[int, str]] = {0: "Enthalpy", 1: "Plastic"}
+    # A_CYC_CELL_TYPE: 0=aluminium is not offered on Helios units
+    _VALUE_TO_OPTION: ClassVar[dict[int, str]] = {1: "Plastic", 2: "Enthalpy"}
     _OPTION_TO_VALUE: ClassVar[dict[str, int]] = {
         v: k for k, v in _VALUE_TO_OPTION.items()
     }

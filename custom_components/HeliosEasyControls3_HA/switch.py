@@ -74,13 +74,6 @@ async def async_setup_entry(
         ),
         ControlSwitch(
             coordinator,
-            "coolHeatRecoveryEnabled",
-            "Cool Recovery Enabled",
-            lambda d: d.CoolHeatRecoveryEnabled,
-            lambda d, v: d.setCoolHeatRecoveryEnabled(v),
-        ),
-        ControlSwitch(
-            coordinator,
             "coolHeatRecovery",
             "Cool Recovery",
             lambda d: d.CoolHeatRecovery,

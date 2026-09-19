@@ -61,7 +61,6 @@ _BUF_EMERGENCY_STOP = 122
 _BUF_IO_BYPASS = 144
 
 # Settings (buf_start=182, reg_start=20480)
-_BUF_SUPPLY_HEATING_MODE = 183
 _BUF_INDIVIDUAL_EXTR_FAN = 189
 _BUF_INDIVIDUAL_SUPP_FAN = 190
 _BUF_MAX_RH = 192
@@ -84,17 +83,17 @@ _BUF_BOOST_RH_CTRL = 213
 _BUF_BOOST_CO2_CTRL = 214
 _BUF_BOOST_SPEED = 215
 _BUF_BOOST_AIR_TEMP = 216
-_BUF_COOL_HEAT_REC_EN = 219
-_BUF_COOL_HEAT_REC = 220
-_BUF_HEAT_EXCHANGER = 222
-_BUF_STEPLESS_BYPASS = 227
-_BUF_BYPASS_SETTING = 230
+_BUF_COOLRECOVERY_DISABLED = 218  # inverted: 1 = cool recovery off
+_BUF_CELL_TYPE = 240
+_BUF_FILTER_INTERVAL = 239  # in days, not months
 _BUF_BOOST_DURATION = 246
 _BUF_INDIVIDUAL_DURATION = 247
-_BUF_FILTER_INTERVAL = 239
 _BUF_FILTER_CHANGED_DAY = 248
 _BUF_FILTER_CHANGED_MONTH = 249
 _BUF_FILTER_CHANGED_YEAR = 250
+_BUF_SUPPLY_HEATING_MODE = 251
+_BUF_PARTIAL_BYPASS = 253
+_BUF_BYPASS_LOCKED = 254  # inverted: 1 = bypass off
 
 # ---------------------------------------------------------------------------
 # Write register addresses
@@ -104,7 +103,6 @@ _REG_MODE = 0x1202
 _REG_BOOST_TIMER = 0x1204
 _REG_INDIVIDUAL_TIMER = 0x1205
 _REG_WEEKLY_TIMER = 0x1207
-_REG_SUPPLY_HEATING = 0x5001
 _REG_INDIVIDUAL_EXTR_FAN = 0x5007
 _REG_INDIVIDUAL_SUPP_FAN = 0x5008
 _REG_MAX_RH = 0x500A
@@ -127,13 +125,13 @@ _REG_BOOST_RH_CTRL = 0x501F
 _REG_BOOST_CO2_CTRL = 0x5020
 _REG_BOOST_FAN_SPEED = 0x5021
 _REG_BOOST_AIR_TEMP = 0x5022
-_REG_COOL_HEAT_REC_EN = 0x5025
-_REG_COOL_HEAT_REC = 0x5026
-_REG_HEAT_EXCHANGER = 0x5028
-_REG_STEPLESS_BYPASS = 0x502D
-_REG_BYPASS_SETTING = 0x5030
+_REG_COOLRECOVERY_DISABLED = 0x5024
+_REG_CELL_TYPE = 0x503A
 _REG_BOOST_DURATION = 0x5040
 _REG_INDIVIDUAL_DURATION = 0x5041
+_REG_SUPPLY_HEATING = 0x5045
+_REG_PARTIAL_BYPASS = 0x5047
+_REG_BYPASS_LOCKED = 0x5048
 
 _FAN_SPEED_REG: dict[KWLState, int] = {
     KWLState.AtHome: _REG_HOME_FAN_SPEED,
@@ -227,7 +225,6 @@ class EasyControls3Instance:
         self._maxCO2: int | None = None
         self._bypassSetting: bool | None = None
         self._steplessBypass: bool | None = None
-        self._coolHeatRecoveryEnabled: bool | None = None
         self._coolHeatRecovery: bool | None = None
         self._heatExchanger: int | None = None
 
@@ -362,24 +359,23 @@ class EasyControls3Instance:
         self._rhControlBoost = bool(_low(data, _BUF_BOOST_RH_CTRL))
         self._co2ControlBoost = bool(_low(data, _BUF_BOOST_CO2_CTRL))
         self._boostAirTempTarget = _kelvin_word_to_celsius(data, _BUF_BOOST_AIR_TEMP)
-        self._coolHeatRecoveryEnabled = bool(_low(data, _BUF_COOL_HEAT_REC_EN))
-        self._coolHeatRecovery = bool(_low(data, _BUF_COOL_HEAT_REC))
-        self._heatExchanger = _low(data, _BUF_HEAT_EXCHANGER)
+        self._coolHeatRecovery = not bool(_low(data, _BUF_COOLRECOVERY_DISABLED))
+        self._heatExchanger = _low(data, _BUF_CELL_TYPE)
         self._maxCO2 = _word(data, _BUF_MAX_CO2)
         self._maxRH = _low(data, _BUF_MAX_RH)
-        self._steplessBypass = bool(_low(data, _BUF_STEPLESS_BYPASS))
-        self._bypassSetting = bool(_low(data, _BUF_BYPASS_SETTING))
+        self._steplessBypass = bool(_low(data, _BUF_PARTIAL_BYPASS))
+        self._bypassSetting = not bool(_low(data, _BUF_BYPASS_LOCKED))
         self._intensivDuration = _minutes_to_time(_word(data, _BUF_BOOST_DURATION))
         self._individualModeDuration = _minutes_to_time(
             _word(data, _BUF_INDIVIDUAL_DURATION)
         )
-        self._filterInterval = _low(data, _BUF_FILTER_INTERVAL)
+        self._filterInterval = _word(data, _BUF_FILTER_INTERVAL)
         day = _low(data, _BUF_FILTER_CHANGED_DAY)
         month = _low(data, _BUF_FILTER_CHANGED_MONTH)
         year = 2000 + _low(data, _BUF_FILTER_CHANGED_YEAR)
         self._filterChanged = datetime.date(year, month, day)
         self._filterDue = self._filterChanged + relativedelta(
-            months=int(self._filterInterval)
+            days=int(self._filterInterval)
         )
         self._atHomeFanSpeed = _low(data, _BUF_HOME_SPEED)
         self._awayFanSpeed = _low(data, _BUF_AWAY_SPEED)
@@ -538,19 +534,16 @@ class EasyControls3Instance:
         await self._set_int(_REG_MAX_CO2, value)
 
     async def setBypassSetting(self, enabled: bool) -> None:
-        await self._set_flag(_REG_BYPASS_SETTING, enabled)
+        await self._set_flag(_REG_BYPASS_LOCKED, not enabled)
 
     async def setSteplessBypass(self, enabled: bool) -> None:
-        await self._set_flag(_REG_STEPLESS_BYPASS, enabled)
-
-    async def setCoolHeatRecoveryEnabled(self, enabled: bool) -> None:
-        await self._set_flag(_REG_COOL_HEAT_REC_EN, enabled)
+        await self._set_flag(_REG_PARTIAL_BYPASS, enabled)
 
     async def setCoolHeatRecovery(self, enabled: bool) -> None:
-        await self._set_flag(_REG_COOL_HEAT_REC, enabled)
+        await self._set_flag(_REG_COOLRECOVERY_DISABLED, not enabled)
 
     async def setHeatExchanger(self, value: int) -> None:
-        await self._set_int(_REG_HEAT_EXCHANGER, value)
+        await self._set_int(_REG_CELL_TYPE, value)
 
     async def test_connection(self) -> bool:
         try:
@@ -801,10 +794,6 @@ class EasyControls3Instance:
     @property
     def SteplessBypass(self) -> bool | None:
         return self._steplessBypass
-
-    @property
-    def CoolHeatRecoveryEnabled(self) -> bool | None:
-        return self._coolHeatRecoveryEnabled
 
     @property
     def CoolHeatRecovery(self) -> bool | None:

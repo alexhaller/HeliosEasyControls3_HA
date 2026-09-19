@@ -1,3 +1,5 @@
+__pycache__/
+*.py[cod]
 .claude/
 .venv/pyvenv.cfg
 .venv/Lib/site-packages/pip/__init__.py
