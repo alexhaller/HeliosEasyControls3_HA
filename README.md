@@ -70,10 +70,9 @@ All entities belong to a single HA device. Within the device card:
 | Weekly Timer | Switch | Enable weekly schedule program |
 | Filter Reminder | Switch | Enable filter change reminder |
 | Temperature Control Mode | Select | Supply / Extract / Extract+ (Zuluft / Abluft / Abluft Plus) |
-| Heat Exchanger | Select | Enthalpy / Plastic |
+| Heat Exchanger | Select | Plastic / Enthalpy (cell type) |
 | Bypass | Switch | Manual bypass enable |
-| Stepless Bypass | Switch | Stepless bypass enable |
-| Cool Recovery Enabled | Switch | Plug removed confirmation |
+| Stepless Bypass | Switch | Stepless (partial) bypass enable |
 | Cool Recovery | Switch | Activate cool recovery mode |
 
 ---
@@ -96,9 +95,43 @@ checksum = sum of all 16-bit LE words & 0xFFFF
 ```
 Expected success response: `02 00 F5 00 F7 00`
 
-**Important**: The **general info, hardware state, software state and output** register ranges (0x0001–0x12F6) are shared with the open-source Vallox WebSocket API. The **settings range (0x5000+) is Helios-specific** — Vallox uses a completely different layout there. Register names in the 0x5000+ section below are Helios-derived, not Vallox API names.
+**Important**: The **general info, hardware state, software state and output** register ranges (0x0001–0x12F6) are shared with the open-source Vallox WebSocket API. The **settings range (0x5000+) differs from the public Vallox layout** in places, so the addresses below come from the unit's own firmware rather than from the Vallox API.
 
 Full Vallox API register reference: https://github.com/yozik04/vallox_websocket_api
+
+---
+
+### How the register mapping was obtained
+
+The authoritative source is the unit itself. Its web UI ships the complete register
+table in clear text, so nothing here needs to be guessed:
+
+1. **Fetch the web UI's bundle.** `http://<device-ip>/js/bundle.js` is served
+   gzip-encoded — decompress it before searching. It contains ~870
+   `VlxDevConstants.<NAME>=<address>` assignments, 727 of them `A_CYC_*`.
+   The extracted table is checked in as [`docs/registers.json`](docs/registers.json)
+   and regenerated with [`scripts/extract_registers.py`](scripts/extract_registers.py).
+2. **Find how a control binds to a register.** The same bundle defines the UI
+   itself, e.g. `coolrecovery:{…data:{value:1,modbus:VlxDevConstants.A_CYC_COOLRECOVERY_DISABLED},list:[{txt:"select_option_off",data:{value:1}},{txt:"select_option_on",data:{value:0}}]}`.
+   This gives the register, the value list *and* any inversion — the three things
+   that are impossible to infer reliably from behaviour alone. Entries named
+   `list_helios` / `helioslist` override `list` on Helios-branded units.
+3. **Confirm the read offset.** Apply the buffer-offset formula, then check that
+   the value at that offset matches what the UI displays.
+4. **Round-trip against the device.** Write a changed value, confirm the mapped
+   read offset picks up exactly that value *and* that the unit's own web UI
+   reflects the change, then restore the original.
+
+Step 4 is what separates a verified mapping from a plausible one. Several bugs in
+this integration came from correlating a UI reading with a register that was
+merely being written at the same time. A register that acknowledges a write proves
+only that the address exists — not that it is the setting you think it is. Both
+the firmware name and a UI round-trip have to agree before a mapping is recorded
+as verified here.
+
+A rejected write is silently dropped: the device simply does not send the
+`02 00 F5 00 F7 00` acknowledgement. Treat a missing ACK as a wrong register or an
+out-of-range value, never as success.
 
 ---
 
@@ -229,20 +262,20 @@ Full Vallox API register reference: https://github.com/yozik04/vallox_websocket_
 
 ### Group: Settings — buf 182, reg 20480 (0x5000) — **Helios-specific layout**
 
-> ⚠️ The Vallox open-source API uses a completely different layout in the 0x5000 range. The register names and assignments below are Helios-specific, derived from reverse engineering and verified against a real device.
+> ℹ️ Register names come from the unit's own firmware — see [How the register mapping was obtained](#how-the-register-mapping-was-obtained). The full table is in [`docs/registers.json`](docs/registers.json).
 
-> ℹ️ **Profile block layout**: each profile occupies four consecutive registers — RH control, CO2 control, fan speed, air temp target — at a stride of 6: Away at 0x5013, Home at 0x5019, Intensive at 0x501F. Verified against the unit's own web UI.
+> ℹ️ **Profile block layout**: each profile occupies four consecutive registers — RH control, CO2 control, fan speed, air temp target — at a stride of 6: Away at 0x5013, Home at 0x5019, Intensive at 0x501F.
 
 | Reg | Hex | Buf | Name (Helios-specific) | Status | Notes |
 |---|---|---|---|---|---|
 | 20480 | 0x5000 | 182 | — | ❌ not read | unknown |
-| 20481 | 0x5001 | 183 | A_CYC_SUPPLY_HEATING_ADJUST_MODE | ✅ read/write | 1=Supply 2=Extract 3=Extract+ (verified); **0 is rejected by the device** |
+| 20481 | 0x5001 | 183 | A_CYC_USED_SETTINGS_VARIABLES | ❌ not read | **Not** the temperature control mode — that is 0x5045 |
 | 20482–20486 | 0x5002–0x5006 | 184–188 | — | ❌ not read | unknown |
 | 20487 | 0x5007 | 189 | A_CYC_FIREPLACE_EXTR_FAN | ✅ read/write | Individual extract fan % |
 | 20488 | 0x5008 | 190 | A_CYC_FIREPLACE_SUPP_FAN | ✅ read/write | Individual supply fan % |
 | 20489 | 0x5009 | 191 | A_CYC_PARTIAL_BYPASS_DISABLED | ❌ not read | Partial bypass disabled flag |
-| 20490 | 0x500A | 192 | A_CYC_RH_BASIC_LEVEL | ✅ read/write | RH Limit % (0x502B is rejected by the device) |
-| 20491 | 0x500B | 193 | A_CYC_CO2_THRESHOLD | ✅ read/write | CO2/VOC Limit ppm (0x5029 is rejected by the device) |
+| 20490 | 0x500A | 192 | A_CYC_RH_BASIC_LEVEL | ✅ read/write | RH Limit % |
+| 20491 | 0x500B | 193 | A_CYC_CO2_THRESHOLD | ✅ read/write | CO2/VOC Limit ppm |
 | 20492 | 0x500C | 194 | A_CYC_EXTRA_ENABLED | ❌ not read | Extra mode enabled |
 | 20493 | 0x500D | 195 | A_CYC_EXTRA_AIR_TEMP_TARGET | ✅ read/write | Extra air temp target (°C) |
 | 20494 | 0x500E | 196 | A_CYC_EXTRA_EXTR_FAN | ✅ read/write | Extra extract fan % |
@@ -267,22 +300,22 @@ Full Vallox API register reference: https://github.com/yozik04/vallox_websocket_
 | 20513 | 0x5021 | 215 | A_CYC_BOOST_SPEED_SETTING | ✅ read | Intensive fan speed % |
 | 20514 | 0x5022 | 216 | A_CYC_BOOST_AIR_TEMP_TARGET | ✅ read/write | Intensive air temp target (°C) |
 | 20515 | 0x5023 | 217 | A_CYC_MAX_FANSPEED_SCALING_SUPPLY | ❌ not read | Max supply fan scaling |
-| 20516 | 0x5024 | 218 | A_CYC_COOLRECOVERY_DISABLED | ❌ not read | Cool recovery disabled flag |
-| 20517 | 0x5025 | 219 | A_CYC_COOL_HEAT_RECOVERY_ENABLED | ✅ read/write | Plug removed confirmation |
-| 20518 | 0x5026 | 220 | A_CYC_COOL_HEAT_RECOVERY | ✅ read/write | Cool recovery active |
+| 20516 | 0x5024 | 218 | A_CYC_COOLRECOVERY_DISABLED | ✅ read/write | Cool Recovery switch — **inverted** (1 = off) |
+| 20517 | 0x5025 | 219 | A_CYC_RELAY_MODE | ❌ not read | Relay configuration — do not write |
+| 20518 | 0x5026 | 220 | A_CYC_DIGITAL_INPUT_1_MODE | ❌ not read | Digital input configuration — do not write |
 | 20519 | 0x5027 | 221 | — | ❌ not read | unknown |
-| 20520 | 0x5028 | 222 | A_CYC_HEAT_EXCHANGER | ✅ read/write | 0=Enthalpy 1=Plastic (verified on KWL 360 W ET) |
-| 20521 | 0x5029 | 223 | A_CYC_MAX_CO2 | ⬆️ write only | CO2/VOC limit write register — read from buf 193 (0x500B) |
+| 20520 | 0x5028 | 222 | A_CYC_ANALOG_INPUT_MODE | ❌ not read | Analog input configuration — do not write |
+| 20521 | 0x5029 | 223 | A_CYC_DEFROST_TEMP_LIMIT | ❌ not read | Defrost parameter — rejects writes |
 | 20522 | 0x502A | 224 | — | ❌ not read | unknown |
-| 20523 | 0x502B | 225 | A_CYC_MAX_RH | ⬆️ write only | RH limit write register — read from buf 192 (0x500A) |
-| 20524 | 0x502C | 226 | A_CYC_BYPASS_MAX_OUTDOOR_TEMP | ❌ removed | Not supported on KWL 360 W ET |
-| 20525 | 0x502D | 227 | A_CYC_STEPLESS_BYPASS | ✅ read/write | Stepless bypass enable |
+| 20523 | 0x502B | 225 | A_CYC_DEFROST_HYSTERESIS | ❌ not read | Defrost parameter — rejects writes |
+| 20524 | 0x502C | 226 | A_CYC_DEFROST_MODE | ❌ not read | Defrost parameter — do not write |
+| 20525 | 0x502D | 227 | A_CYC_DEFROST_RH_PARAM | ❌ not read | Defrost parameter — do not write |
 | 20526 | 0x502E | 228 | — | ❌ not read | unknown |
 | 20527 | 0x502F | 229 | — | ❌ not read | unknown |
-| 20528 | 0x5030 | 230 | A_CYC_BYPASS_SETTING | ✅ read/write | Bypass manual enable |
+| 20528 | 0x5030 | 230 | A_CYC_DEFROST_COMP_LIMIT | ❌ not read | Defrost parameter — rejects writes |
 | 20529–20536 | 0x5031–0x5038 | 231–238 | — | ❌ not read | MLV / waterheater / defrost params |
-| 20537 | 0x5039 | 239 | A_CYC_FILTER_CHANGE_INTERVAL | ✅ read | Filter interval (months) |
-| 20538 | 0x503A | 240 | A_CYC_CELL_TYPE | ❌ not read | Cell/heat exchanger type |
+| 20537 | 0x5039 | 239 | A_CYC_FILTER_CHANGE_INTERVAL | ✅ read | Filter interval in **days** (180 = the UI's "6 months") |
+| 20538 | 0x503A | 240 | A_CYC_CELL_TYPE | ✅ read/write | Heat Exchanger select — 0=aluminium (not on Helios) 1=plastic 2=enthalpy |
 | 20539–20542 | 0x503B–0x503E | 241–244 | A_CYC_EXTRA_HEATER_TYPE / POST_HEATER_TYPE / BRANDING / SIDEDNESS | ❌ not read | — |
 | 20543 | 0x503F | 245 | A_CYC_RH_LEVEL_MODE | ❌ not read | Humidity mode: Auto/Manual |
 | 20544 | 0x5040 | 246 | A_CYC_BOOST_TIME | ✅ read/write | Intensive mode duration (min) |
@@ -290,8 +323,10 @@ Full Vallox API register reference: https://github.com/yozik04/vallox_websocket_
 | 20546 | 0x5042 | 248 | A_CYC_FILTER_CHANGED_DAY | ✅ read | Last filter change day |
 | 20547 | 0x5043 | 249 | A_CYC_FILTER_CHANGED_MONTH | ✅ read | Last filter change month |
 | 20548 | 0x5044 | 250 | A_CYC_FILTER_CHANGED_YEAR | ✅ read | Last filter change year (+2000) |
-| 20549 | 0x5045 | 251 | A_CYC_SUPPLY_HEATING_ADJUST_MODE (Vallox std) | ❌ not read | Helios uses 0x5001 instead |
-| 20550–20552 | 0x5046–0x5048 | 252–254 | A_CYC_MIN_DEFROST_TIME / PARTIAL_BYPASS / BYPASS_LOCKED | ❌ not read | — |
+| 20549 | 0x5045 | 251 | A_CYC_SUPPLY_HEATING_ADJUST_MODE | ✅ read/write | Temperature Control Mode — 0=supply air 1=extract air 2=cooling mode |
+| 20550 | 0x5046 | 252 | A_CYC_MIN_DEFROST_TIME | ❌ not read | — |
+| 20551 | 0x5047 | 253 | A_CYC_PARTIAL_BYPASS | ✅ read/write | Stepless Bypass switch (Helios: 0=off 1=on) |
+| 20552 | 0x5048 | 254 | A_CYC_BYPASS_LOCKED | ✅ read/write | Bypass switch — **inverted** (1 = off) |
 | 20553–20555 | 0x5049–0x504B | 255–257 | A_CYC_OPT_TEMP_SENSOR_MODE / POST_HEATER_WINTER_SETPOINT / DEWPOINT_LIMIT_IN_USE | ❌ not read | — |
 
 ---
@@ -333,7 +368,6 @@ Full Vallox API register reference: https://github.com/yozik04/vallox_websocket_
 | buf 1–10 (reg 1–10) | Application SW version | General info |
 | buf 26 (reg 26) | Device orientation (A_CYC_NO_HANDEDNESS) | General info |
 | buf 245 (0x503F) | Humidity mode Auto/Manual (A_CYC_RH_LEVEL_MODE) | Settings |
-| buf 240 (0x503A) | Cell type (A_CYC_CELL_TYPE) | Settings — may be same as Heat Exchanger |
 | buf 144–148 (0x12F1–0x12F5) | IO relay states: extract/supply fan, error, heater, extra heater | Output |
 | reg 36865+ | Fault history | Faults group |
 | reg 40961–41128 | Full weekly schedule (168 hourly slots) | Weekly schedule |
@@ -342,4 +376,3 @@ Full Vallox API register reference: https://github.com/yozik04/vallox_websocket_
 
 | Item | Action needed |
 |---|---|
-| Settings 0x5025–0x5028 semantics | Confirm Helios firmware meaning for cool recovery / relay mode / digital input registers |
