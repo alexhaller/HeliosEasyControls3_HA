@@ -1,3 +1,9 @@
+## [1.8.15](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v1.8.14...v1.8.15) (2026-09-19)
+
+### Bug Fixes
+
+* restore CONCENTRATION_PARTS_PER_MILLION for the ppm units ([31226f3](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/31226f3fec08c441ceaca85696e72b9ffb72e4d2))
+
 ## [1.8.14](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v1.8.13...v1.8.14) (2026-09-19)
 
 ### Bug Fixes
