@@ -1,3 +1,9 @@
+## [1.10.0](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v1.9.0...v1.10.0) (2026-09-20)
+
+### Features
+
+* expose the IO outputs, constant-flow and timed-function registers ([0a03c2c](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/0a03c2c387b67061ffdce8bc42caf6024e473572))
+
 ## [1.9.0](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v1.8.15...v1.9.0) (2026-09-19)
 
 ### Features
