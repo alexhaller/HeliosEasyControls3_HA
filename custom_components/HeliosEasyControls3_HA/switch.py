@@ -79,6 +79,21 @@ async def async_setup_entry(
             lambda d: d.CoolHeatRecovery,
             lambda d, v: d.setCoolHeatRecovery(v),
         ),
+        ControlSwitch(
+            coordinator,
+            "extraEnabled",
+            "Extra Mode Enabled",
+            lambda d: d.ExtraEnabled,
+            lambda d, v: d.setExtraEnabled(v),
+        ),
+        ControlSwitch(
+            coordinator,
+            "timedFunctionEnabled",
+            "Timed Function",
+            lambda d: d.TimedFunctionEnabled,
+            lambda d, v: d.setTimedFunctionEnabled(v),
+            icon="mdi:airplane-clock",
+        ),
     ]
     if coordinator.data.co2SensorCount > 0:
         entities += [

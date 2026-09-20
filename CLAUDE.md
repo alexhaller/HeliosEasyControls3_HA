@@ -28,9 +28,18 @@ register table in clear text.
   want, the address is wrong.
 - **The UI bindings are in the same bundle** (`http://<device-ip>/js/bundle.js`,
   gzip-encoded). Searching for `modbus:VlxDevConstants.<NAME>` yields the control
-  definition with its value list and any inversion — e.g. `A_CYC_COOLRECOVERY_DISABLED`
-  and `A_CYC_BYPASS_LOCKED` are both inverted, and `list_helios` / `helioslist`
-  override the generic value list on Helios units.
+  definition with its value list, its `min`/`max` and any inversion — e.g.
+  `A_CYC_COOLRECOVERY_DISABLED` and `A_CYC_BYPASS_LOCKED` are both inverted, and
+  `list_helios` / `helioslist` override the generic value list on Helios units.
+  A register with no binding has no value list to copy: expose it read-only
+  rather than inventing one.
+- **The frame layout is in the bundle too**, as `RANGE_START_*` / `RANGE_END_*`
+  constants plus `vlxBufferSize`. Never derive a buffer offset by counting from
+  a neighbouring value — read it off that table. Two consequences: each range's
+  first word is a length marker (so the first real value is at `buf_start + 1`),
+  and ranges for absent hardware are dropped from the reply, which shifts
+  everything after them. Anything past the weekly schedule must resolve its
+  offset by walking those markers. See the frame layout table in the README.
 - **Then round-trip it against the device**: write a changed value, confirm the
   mapped read offset picks up exactly that value *and* that the unit's own web UI
   reflects the change, then restore the original. A write that is acknowledged

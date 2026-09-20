@@ -24,6 +24,8 @@ async def async_setup_entry(
             StateSelect(coordinator),
             TempControlModeSelect(coordinator),
             HeatExchangerSelect(coordinator),
+            HumidityControlModeSelect(coordinator),
+            TimedFunctionModeSelect(coordinator),
         ]
     )
 
@@ -100,4 +102,63 @@ class HeatExchangerSelect(EasyControls3BaseEntity, SelectEntity):
 
     async def async_select_option(self, option: str) -> None:
         await self._device.setHeatExchanger(self._OPTION_TO_VALUE[option])
+        await self.coordinator.async_request_refresh()
+
+
+class HumidityControlModeSelect(EasyControls3BaseEntity, SelectEntity):
+    entity_category = EntityCategory.CONFIG
+
+    # A_CYC_RH_LEVEL_MODE
+    _VALUE_TO_OPTION: ClassVar[dict[int, str]] = {0: "Automatic", 1: "Manual"}
+    _OPTION_TO_VALUE: ClassVar[dict[str, int]] = {
+        v: k for k, v in _VALUE_TO_OPTION.items()
+    }
+
+    def __init__(self, coordinator: EasyControls3Coordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{self._device.serialNR}_rhLevelMode"
+        self._attr_name = "Humidity Control Mode"
+        self._attr_options = list(self._VALUE_TO_OPTION.values())
+
+    @property
+    def current_option(self) -> str | None:
+        value = self._device.rhLevelMode
+        if value is None:
+            return None
+        return self._VALUE_TO_OPTION.get(value)
+
+    async def async_select_option(self, option: str) -> None:
+        await self._device.setRhLevelMode(self._OPTION_TO_VALUE[option])
+        await self.coordinator.async_request_refresh()
+
+
+class TimedFunctionModeSelect(EasyControls3BaseEntity, SelectEntity):
+    entity_category = EntityCategory.CONFIG
+    _attr_icon = "mdi:airplane-clock"
+
+    # A_CYC_TIMED_FUNCTION_MODE: the mode the unit holds during the date range
+    _VALUE_TO_OPTION: ClassVar[dict[int, str]] = {
+        0: "At Home",
+        1: "Away",
+        2: "Standby",
+    }
+    _OPTION_TO_VALUE: ClassVar[dict[str, int]] = {
+        v: k for k, v in _VALUE_TO_OPTION.items()
+    }
+
+    def __init__(self, coordinator: EasyControls3Coordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{self._device.serialNR}_timedFunctionMode"
+        self._attr_name = "Timed Function Mode"
+        self._attr_options = list(self._VALUE_TO_OPTION.values())
+
+    @property
+    def current_option(self) -> str | None:
+        value = self._device.timedFunctionMode
+        if value is None:
+            return None
+        return self._VALUE_TO_OPTION.get(value)
+
+    async def async_select_option(self, option: str) -> None:
+        await self._device.setTimedFunctionMode(self._OPTION_TO_VALUE[option])
         await self.coordinator.async_request_refresh()

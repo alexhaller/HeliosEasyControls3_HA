@@ -75,6 +75,103 @@ async def async_setup_entry(
         IndividualTimerRemainingSensor(coordinator),
     ]
 
+    if coordinator.data.multisensorTemp is not None:
+        entities.append(
+            TemperatureSensor(
+                coordinator,
+                "multisensorTemp",
+                "Multisensor Temperature",
+                lambda d: d.multisensorTemp,
+            )
+        )
+    if coordinator.data.multisensorRH is not None:
+        entities.append(MultisensorHumiditySensor(coordinator))
+    if coordinator.data.co2Value is not None:
+        entities.append(CO2ValueSensor(coordinator))
+
+    entities += [
+        DiagnosticSensor(
+            coordinator,
+            "ioExtractFan",
+            "Extract Fan Output",
+            lambda d: d.IoExtractFan,
+            icon="mdi:fan",
+        ),
+        DiagnosticSensor(
+            coordinator,
+            "ioSupplyFan",
+            "Supply Fan Output",
+            lambda d: d.IoSupplyFan,
+            icon="mdi:fan",
+        ),
+        DiagnosticSensor(coordinator, "rhLevel", "RH Level", lambda d: d.rhLevel),
+        DiagnosticSensor(coordinator, "co2Level", "CO2 Level", lambda d: d.co2Level),
+        DiagnosticSensor(coordinator, "mlvState", "MLV State", lambda d: d.MlvState),
+        DiagnosticSensor(
+            coordinator, "cloudStatus", "Cloud Status", lambda d: d.CloudStatus
+        ),
+        DiagnosticSensor(
+            coordinator,
+            "measuredSupply",
+            "Measured Supply Airflow",
+            lambda d: d.MeasuredSupply,
+        ),
+        DiagnosticSensor(
+            coordinator,
+            "measuredExtract",
+            "Measured Extract Airflow",
+            lambda d: d.MeasuredExtract,
+        ),
+        DiagnosticSensor(
+            coordinator,
+            "cfSupplyFanLoad",
+            "Constant Flow Supply Fan Load",
+            lambda d: d.cfSupplyFanLoad,
+        ),
+        DiagnosticSensor(
+            coordinator,
+            "cfExtractFanLoad",
+            "Constant Flow Extract Fan Load",
+            lambda d: d.cfExtractFanLoad,
+        ),
+        DiagnosticSensor(
+            coordinator, "supplyAirflow", "Supply Airflow", lambda d: d.SupplyAirflow
+        ),
+        DiagnosticSensor(
+            coordinator, "extractAirflow", "Extract Airflow", lambda d: d.ExtractAirflow
+        ),
+        DiagnosticSensor(
+            coordinator,
+            "condensationPrevention",
+            "Condensation Prevention",
+            lambda d: d.condensationPrevention,
+        ),
+        DiagnosticSensor(
+            coordinator,
+            "constantFanMax",
+            "Constant Fan Max Value",
+            lambda d: d.constantFanMax,
+        ),
+        DiagnosticSensor(
+            coordinator,
+            "constantFanMin",
+            "Constant Fan Min Value",
+            lambda d: d.constantFanMin,
+        ),
+        DiagnosticSensor(
+            coordinator,
+            "constantFanBalance",
+            "Constant Fan Balance",
+            lambda d: d.constantFanBalance,
+        ),
+        DiagnosticSensor(
+            coordinator,
+            "timedFunctionReturnMode",
+            "Timed Function Return Mode",
+            lambda d: d.timedFunctionReturnMode,
+        ),
+    ]
+
     for i in range(6):
         if coordinator.data.rhSensor(i) is not None:
             entities.append(RHSensor(coordinator, i))
@@ -125,6 +222,68 @@ class HumiditySensor(EasyControls3BaseEntity, SensorEntity):
     @property
     def native_value(self) -> int | None:
         return self._device.AirRH
+
+
+class MultisensorHumiditySensor(EasyControls3BaseEntity, SensorEntity):
+    device_class = SensorDeviceClass.HUMIDITY
+    native_unit_of_measurement = PERCENTAGE
+    state_class = SensorStateClass.MEASUREMENT
+    suggested_display_precision = 1
+
+    def __init__(self, coordinator: EasyControls3Coordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{self._device.serialNR}_multisensorRH"
+        self._attr_name = "Multisensor Humidity"
+
+    @property
+    def native_value(self) -> int | None:
+        return self._device.multisensorRH
+
+
+class CO2ValueSensor(EasyControls3BaseEntity, SensorEntity):
+    device_class = SensorDeviceClass.CO2
+    native_unit_of_measurement = UnitOfRatio.PARTS_PER_MILLION
+    state_class = SensorStateClass.MEASUREMENT
+    suggested_display_precision = 0
+
+    def __init__(self, coordinator: EasyControls3Coordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{self._device.serialNR}_co2Value"
+        self._attr_name = "CO2 Value"
+
+    @property
+    def native_value(self) -> int | None:
+        return self._device.co2Value
+
+    @property
+    def available(self) -> bool:
+        return super().available and self._device.co2Value is not None
+
+
+class DiagnosticSensor(EasyControls3BaseEntity, SensorEntity):
+    """Raw register value, off by default: useful for support, not for daily use."""
+
+    entity_category = EntityCategory.DIAGNOSTIC
+    _attr_entity_registry_enabled_default = False
+
+    def __init__(
+        self,
+        coordinator: EasyControls3Coordinator,
+        unique_suffix: str,
+        name: str,
+        getter: Callable[[EasyControls3Instance], int | None],
+        icon: str | None = None,
+    ) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{self._device.serialNR}_{unique_suffix}"
+        self._attr_name = name
+        self._getter = getter
+        if icon is not None:
+            self._attr_icon = icon
+
+    @property
+    def native_value(self) -> int | None:
+        return self._getter(self._device)
 
 
 class RHSensor(EasyControls3BaseEntity, SensorEntity):
