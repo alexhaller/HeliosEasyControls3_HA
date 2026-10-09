@@ -4,7 +4,7 @@ import logging
 import re
 from typing import Any
 
-import voluptuous as vol
+import probatio
 from homeassistant import config_entries, exceptions
 from homeassistant.config_entries import ConfigFlowResult
 from homeassistant.core import HomeAssistant
@@ -14,7 +14,7 @@ from .EasyControls3Instance import EasyControls3Instance
 
 _LOGGER = logging.getLogger(__name__)
 
-DATA_SCHEMA = vol.Schema({"host": str})
+DATA_SCHEMA = probatio.Schema({"host": str})
 
 # Accepts IPv4 addresses (each octet 0-255) or valid hostnames (e.g. helios.local, 192.168.1.10)
 _OCTET = r"(25[0-5]|2[0-4]\d|1\d{2}|[1-9]\d|\d)"
