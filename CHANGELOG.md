@@ -1,3 +1,15 @@
+## [2.0.0](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v1.10.0...v2.0.0) (2026-10-09)
+
+### ⚠ BREAKING CHANGES
+
+* requires Home Assistant 2026.9.0 or later.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+### Features
+
+* build schemas with probatio and require Home Assistant 2026.9 ([de88034](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/de8803427d79415ff660a3e9b61b3ab8bcf63c7a))
+
 ## [1.10.0](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v1.9.0...v1.10.0) (2026-09-20)
 
 ### Features
