@@ -468,10 +468,27 @@ class EasyControls3Instance:
         self._parse_extended(data)
 
     def _parse_device_info(self, data: bytes) -> None:
-        self._deviceModel = deviceInfo["device_model_data"][
-            _low(data, _BUF_MACHINE_MODEL)
-        ]
-        self._deviceType = deviceInfo["device_type_data"][_low(data, _BUF_MACHINE_TYPE)]
+        """Identify the unit without failing on newer model/type codes."""
+        model_code = _low(data, _BUF_MACHINE_MODEL)
+        type_code = _low(data, _BUF_MACHINE_TYPE)
+        models = deviceInfo["device_model_data"]
+        types = deviceInfo["device_type_data"]
+
+        self._deviceModel = (
+            models[model_code]
+            if model_code < len(models)
+            else f"Unknown model ({model_code})"
+        )
+        self._deviceType = (
+            types[type_code]
+            if type_code < len(types)
+            else f"Unknown type ({type_code})"
+        )
+        LOGGER.warning(
+            "Helios device identification: model_code=%s, type_code=%s, "
+            "model=%s, type=%s",
+            model_code, type_code, self._deviceModel, self._deviceType,
+        )
         self._SerialNR = _word(data, _BUF_SERIAL_MSW) * 65536 + _word(
             data, _BUF_SERIAL_LSW
         )
