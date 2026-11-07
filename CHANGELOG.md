@@ -1,3 +1,9 @@
+## [3.1.0](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v3.0.1...v3.1.0) (2026-11-07)
+
+### Features
+
+* show the firmware version and take over the open contributor fixes ([eddd8e5](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/eddd8e592d23b04cbae103acca589a8c1160d9ea)), closes [#4](https://github.com/alexhaller/HeliosEasyControls3_HA/issues/4) [#5](https://github.com/alexhaller/HeliosEasyControls3_HA/issues/5) [#6](https://github.com/alexhaller/HeliosEasyControls3_HA/issues/6) [#8](https://github.com/alexhaller/HeliosEasyControls3_HA/issues/8) [#7](https://github.com/alexhaller/HeliosEasyControls3_HA/issues/7) [#7](https://github.com/alexhaller/HeliosEasyControls3_HA/issues/7)
+
 ## [3.0.1](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v3.0.0...v3.0.1) (2026-11-07)
 
 ### Bug Fixes
