@@ -3,5 +3,4 @@
 # backtrack to an older release of it instead of failing.
 pytest
 pytest-homeassistant-custom-component
-python-dateutil
 websockets

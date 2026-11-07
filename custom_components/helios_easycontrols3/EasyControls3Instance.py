@@ -4,7 +4,6 @@ import datetime
 import logging
 from typing import cast
 
-from dateutil.relativedelta import relativedelta
 from homeassistant.exceptions import HomeAssistantError
 from websockets.asyncio.client import connect
 
@@ -628,7 +627,7 @@ class EasyControls3Instance:
         month = _low(data, _BUF_FILTER_CHANGED_MONTH)
         year = 2000 + _low(data, _BUF_FILTER_CHANGED_YEAR)
         self._filterChanged = datetime.date(year, month, day)
-        self._filterDue = self._filterChanged + relativedelta(
+        self._filterDue = self._filterChanged + datetime.timedelta(
             days=int(self._filterInterval)
         )
         self._atHomeFanSpeed = _low(data, _BUF_HOME_SPEED)
