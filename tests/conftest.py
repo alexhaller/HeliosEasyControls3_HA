@@ -31,5 +31,8 @@ def mock_unit() -> Generator[None]:
         self._deviceModel = "KWL 360 W ET"
         self._deviceType = "KWL"
 
-    with patch.object(EasyControls3Instance, "readCurrentData", read):
+    with (
+        patch.object(EasyControls3Instance, "readCurrentData", read),
+        patch.object(EasyControls3Instance, "test_connection", return_value=True),
+    ):
         yield

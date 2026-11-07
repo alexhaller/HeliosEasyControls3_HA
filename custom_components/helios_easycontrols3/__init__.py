@@ -80,11 +80,12 @@ async def _async_adopt_legacy_entry(hass: HomeAssistant, entry: ConfigEntry) -> 
     Runs before the platforms are set up, so the entities are found under their
     old entity IDs and keep their history, dashboards and automations.
     """
+    # Matched on the host: entries created before 2026-05-14 have no unique_id.
     legacy = next(
         (
             candidate
             for candidate in hass.config_entries.async_entries(LEGACY_DOMAIN)
-            if candidate.unique_id == entry.unique_id
+            if candidate.data.get("host") == entry.data["host"]
         ),
         None,
     )

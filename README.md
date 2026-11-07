@@ -14,16 +14,24 @@ The integration uses the device serial number for stable unique entity IDs (surv
 
 v3 changed the integration domain from `HeliosEasyControls3_HA` to `helios_easycontrols3`. Home Assistant
 rejects domains with capital letters: the old one kept the bundled icon from showing and, from Home
-Assistant 2026.11, kept the Marketplace from installing any update. Because the domain changed, an
-in-place update is not possible:
+Assistant 2026.11, kept the Marketplace from installing any update. The Marketplace does not update
+an installed integration to a new domain, and it refuses to uninstall one while its entry exists, so
+the old files have to be removed by hand once:
 
 1. Back up Home Assistant.
-2. In HACS or the Marketplace, **remove** the integration. Do not delete its entry under
-   *Settings → Devices & services* — that entry is what gets migrated.
-3. Install it again from the same repository and restart Home Assistant.
+2. Delete the folder `custom_components/HeliosEasyControls3_HA`, for example in the Terminal app with
+   `rm -r /config/custom_components/HeliosEasyControls3_HA` or with the File editor app. Do not delete
+   the entry under *Settings → Devices & services* — that entry is what gets migrated.
+3. Restart Home Assistant. The Marketplace notices the folder is gone and no longer counts the old
+   version as installed; the entry shows as failing until the new version is in place.
+4. Install the integration again from the same repository and restart Home Assistant.
+5. Add it under *Settings → Devices & services → Add integration → Helios easyControls 3.0*, with the
+   same IP address as before.
 
-On startup the integration takes over the old entry: the device and all entities move across under
-their existing entity IDs, so history, dashboards and automations keep working. If the old
+Setting it up takes over the old entry with that IP address: the device and all entities move across
+under their existing entity IDs, so history, dashboards and automations keep working, and the old
+entry disappears. Step 5 is needed because Home Assistant only starts an integration that has an
+entry, and the new domain has none until it is added. If the old
 `custom_components/HeliosEasyControls3_HA` folder is still present, nothing is migrated and the log
 asks you to remove it first.
 
