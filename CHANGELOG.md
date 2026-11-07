@@ -1,3 +1,9 @@
+## [3.0.1](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v3.0.0...v3.0.1) (2026-11-07)
+
+### Bug Fixes
+
+* find the legacy entry by host and document the step that starts the migration ([c53469c](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/c53469c0a6a3f4a117c3fb4c6eb8a3e9cd523ee3))
+
 ## [3.0.0](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v2.0.0...v3.0.0) (2026-11-07)
 
 ### ⚠ BREAKING CHANGES
