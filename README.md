@@ -10,6 +10,23 @@ HACS custom integration for the **Helios KWL easyControls 3.0** ventilation unit
 
 The integration uses the device serial number for stable unique entity IDs (survive IP changes).
 
+### Upgrading from v2 or older
+
+v3 changed the integration domain from `HeliosEasyControls3_HA` to `helios_easycontrols3`. Home Assistant
+rejects domains with capital letters: the old one kept the bundled icon from showing and, from Home
+Assistant 2026.11, kept the Marketplace from installing any update. Because the domain changed, an
+in-place update is not possible:
+
+1. Back up Home Assistant.
+2. In HACS or the Marketplace, **remove** the integration. Do not delete its entry under
+   *Settings → Devices & services* — that entry is what gets migrated.
+3. Install it again from the same repository and restart Home Assistant.
+
+On startup the integration takes over the old entry: the device and all entities move across under
+their existing entity IDs, so history, dashboards and automations keep working. If the old
+`custom_components/HeliosEasyControls3_HA` folder is still present, nothing is migrated and the log
+asks you to remove it first.
+
 ---
 
 ## Entities

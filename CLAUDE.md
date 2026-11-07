@@ -8,11 +8,11 @@ This is a Home Assistant HACS custom integration for the **Helios easyControls 3
 - Project forked from: https://github.com/frawe/EasyControls3_homeassistant
 
 Key files:
-- [EasyControls3Instance.py](custom_components/HeliosEasyControls3_HA/EasyControls3Instance.py) — WebSocket client; parses raw binary frames from the device. Do not change the WebSocket binary frame format without also updating the parser in `EasyControls3Instance._parseData`.
-- [__init__.py](custom_components/HeliosEasyControls3_HA/__init__.py) — HA entry point; sets up the `DataUpdateCoordinator` with a 60 s poll interval
-- [config_flow.py](custom_components/HeliosEasyControls3_HA/config_flow.py) — UI config flow (only needs IP address)
-- [const.py](custom_components/HeliosEasyControls3_HA/const.py) — shared constants (`DOMAIN`, etc.)
-- [KWLStates.py](custom_components/HeliosEasyControls3_HA/KWLStates.py) — enum for KWL operating modes
+- [EasyControls3Instance.py](custom_components/helios_easycontrols3/EasyControls3Instance.py) — WebSocket client; parses raw binary frames from the device. Do not change the WebSocket binary frame format without also updating the parser in `EasyControls3Instance._parseData`.
+- [__init__.py](custom_components/helios_easycontrols3/__init__.py) — HA entry point; sets up the `DataUpdateCoordinator` with a 60 s poll interval
+- [config_flow.py](custom_components/helios_easycontrols3/config_flow.py) — UI config flow (only needs IP address)
+- [const.py](custom_components/helios_easycontrols3/const.py) — shared constants (`DOMAIN`, etc.)
+- [KWLStates.py](custom_components/helios_easycontrols3/KWLStates.py) — enum for KWL operating modes
 - Platform modules: `sensor.py`, `number.py`, `select.py`, `switch.py`, `time.py`
 
 ## Register mapping — never guess, always verify
@@ -65,5 +65,10 @@ downgrade that back to a log line.
   2026.7 it would additionally require reverting to `CONCENTRATION_PARTS_PER_MILLION`
   (that pair was changed, reverted and changed again in e1687e2, 31226f3).
 
-- **pip-audit** domain for this project is `HeliosEasyControls3_HA`; the only listed requirement is `python-dateutil` (`websockets` is bundled by HA core and deliberately not listed).
-- **Brand assets**: `custom_components/HeliosEasyControls3_HA/brand/icon.png` and `brands/icon.png` (Helios red #C62828, 512×512 PNG).
+- **Domain is `helios_easycontrols3`.** It was `HeliosEasyControls3_HA` until v3, which HA rejects as
+  an integration domain (only lowercase letters, digits and `_`): the brands API refused the bundled
+  icon and the 2026.11 Marketplace refused every update. `__init__.py` migrates entries left under
+  `LEGACY_DOMAIN` - devices and entities move to the new entry with their entity IDs intact. Keep that
+  migration until no user can still be on a v2 install.
+- **pip-audit** domain for this project is `helios_easycontrols3`; the only listed requirement is `python-dateutil` (`websockets` is bundled by HA core and deliberately not listed).
+- **Brand assets**: `custom_components/helios_easycontrols3/brand/icon.png` and `brands/icon.png` (Helios red #C62828, 512×512 PNG).

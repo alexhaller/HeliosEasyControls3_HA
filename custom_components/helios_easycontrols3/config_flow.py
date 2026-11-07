@@ -77,6 +77,17 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="user", data_schema=DATA_SCHEMA, errors=errors
         )
 
+    async def async_step_import(self, import_data: dict[str, Any]) -> ConfigFlowResult:
+        """Recreate an entry of the legacy domain without contacting the unit.
+
+        The unit may be offline at startup; the entry already proved it works.
+        """
+        await self.async_set_unique_id(import_data["host"])
+        self._abort_if_unique_id_configured()
+        return self.async_create_entry(
+            title=import_data["title"], data={"host": import_data["host"]}
+        )
+
 
 class CannotConnect(exceptions.HomeAssistantError):
     """Error to indicate we cannot connect."""

@@ -1,5 +1,5 @@
 {
-  "domain": "HeliosEasyControls3_HA",
+  "domain": "helios_easycontrols3",
   "name": "Helios easyControls 3.0",
   "codeowners": ["@alexhaller"],
   "config_flow": true,
