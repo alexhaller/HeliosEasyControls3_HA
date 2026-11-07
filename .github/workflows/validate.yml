@@ -58,4 +58,4 @@ jobs:
         with:
           python-version: "3.14"
       - run: pip install -r requirements.test.txt
-      - run: pytest tests -q -o asyncio_mode=auto -o asyncio_default_fixture_loop_scope=function
+      - run: pytest tests -q -p no:respx -o asyncio_mode=auto -o asyncio_default_fixture_loop_scope=function

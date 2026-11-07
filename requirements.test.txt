@@ -1,6 +1,6 @@
-# homeassistant is deliberately not pinned: pytest-homeassistant-custom-component
-# pins one exact HA version, and a second pin that disagrees makes pip silently
-# backtrack to an older release of it instead of failing.
+# homeassistant is deliberately not pinned: pytest-homeassistant pins the exact
+# HA release it was built from, and a second pin that disagrees makes pip
+# silently backtrack to an older release of it instead of failing.
 pytest
-pytest-homeassistant-custom-component
+pytest-homeassistant
 websockets

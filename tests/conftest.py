@@ -11,15 +11,8 @@ from custom_components.helios_easycontrols3.EasyControls3Instance import (
     EasyControls3Instance,
 )
 
-pytest_plugins = "pytest_homeassistant_custom_component"
-
 SERIAL = 12345
 HOST = "192.168.1.126"
-
-
-@pytest.fixture(autouse=True)
-def auto_enable_custom_integrations(enable_custom_integrations: None) -> None:
-    """Enable the integration under custom_components."""
 
 
 @pytest.fixture
