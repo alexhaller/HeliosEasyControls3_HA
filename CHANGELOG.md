@@ -1,3 +1,15 @@
+## [3.0.0](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v2.0.0...v3.0.0) (2026-11-07)
+
+### ⚠ BREAKING CHANGES
+
+* the integration domain is now helios_easycontrols3. Remove
+the integration in HACS or the Marketplace (keep its entry under Devices &
+services) and install it again; the entry is migrated on the next start.
+
+### Features
+
+* rename the domain to helios_easycontrols3 and migrate old entries ([31d783e](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/31d783ea1f4eb3e55999bec14b5c8f9fd80a97c2)), closes [#9](https://github.com/alexhaller/HeliosEasyControls3_HA/issues/9)
+
 ## [2.0.0](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v1.10.0...v2.0.0) (2026-10-09)
 
 ### ⚠ BREAKING CHANGES
