@@ -1,3 +1,9 @@
+## [3.1.1](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v3.1.0...v3.1.1) (2026-11-07)
+
+### Bug Fixes
+
+* drop python-dateutil, the filter due date needs only timedelta ([615d1a1](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/615d1a1a0a8f54e8297f870ac906ededa12b2762))
+
 ## [3.1.0](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v3.0.1...v3.1.0) (2026-11-07)
 
 ### Features
