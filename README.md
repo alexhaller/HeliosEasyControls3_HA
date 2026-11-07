@@ -66,7 +66,7 @@ All entities belong to a single HA device. Within the device card:
 |---|---|
 | Last / Next Filter Change | Dates |
 | Filter Remaining Days | Days until filter change due |
-| Total Uptime Years / Hours | Cumulative device runtime |
+| Uptime Years Component / Uptime Hours Component | Cumulative device runtime as a pair: whole years, plus the hours on top of them (not a lifetime hour total) |
 | Current Uptime Hours | Runtime since last restart |
 | External RH Sensor Count | Number of connected external RH sensors |
 | CO2 Sensor Count | Number of connected CO2 sensors |
@@ -221,7 +221,7 @@ out-of-range value, never as success.
 
 | Reg | Hex | Buf | Name | Status | Notes |
 |---|---|---|---|---|---|
-| 1–10 | 0x01–0x0A | 1–10 | A_CYC_APPL_SW_VERSION_0..9 | ❌ not read | Application SW version (chars/words) |
+| 1–10 | 0x01–0x0A | 1–10 | A_CYC_APPL_SW_VERSION_0..9 | ✅ read | Firmware version, shown as the device's software version. Words 2–10 hold one component each, **little-endian** unlike the rest of the frame; leading zero words dropped, e.g. `1.0.29` |
 | 11 | 0x0B | 11 | A_CYC_BOOT_SW_VERSION | ❌ not read | Boot SW version |
 | 12–13 | 0x0C–0x0D | 12–13 | A_CYC_APPL_SW_SIZE_0..1 | ❌ not read | Application SW size |
 | 14 | 0x0E | 14 | A_CYC_SERIAL_NUMBER_MSW | ✅ read | High word of serial number |
@@ -455,6 +455,12 @@ gateway and mask, which is what confirms these offsets.
 
 ### Constant Flow — buf 281, reg 32768 (0x8000)
 
+> ⚠️ **Firmware-dependent.** On firmware 1.0.9 the same addresses 0x8001–0x8006 are
+> self-test registers (fans, bypass, heaters), and 0x5012 has no unit meaning. Only
+> 1.0.29 is verified to hold the constant-flow setpoints, so the block is read — and
+> its entities created — only from firmware 1.0.29 on, and only when the range marker
+> at buf 281 reads 16. Found by @lollo0296 in #7.
+
 | Reg | Hex | Buf | Name | Status | Notes |
 |---|---|---|---|---|---|
 | 32768 | 0x8000 | 281 | — | — | Range length marker (16) |
@@ -541,7 +547,6 @@ profile value. Monday 00:00 is buf 498; `buf = 498 + day × 24 + hour`.
 
 | Register(s) | Name | Where |
 |---|---|---|
-| buf 1–10 (reg 1–10) | Application SW version | General info |
 | buf 26 (reg 26) | Device orientation (A_CYC_NO_HANDEDNESS) | General info |
 | buf 132–137 | Device clock — drift detection against HA's time | Time |
 | buf 146–151 | Digital input states (clarify `IN_ERROR` polarity first) | Input |

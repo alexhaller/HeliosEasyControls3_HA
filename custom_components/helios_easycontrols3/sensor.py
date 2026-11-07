@@ -111,30 +111,6 @@ async def async_setup_entry(
             coordinator, "cloudStatus", "Cloud Status", lambda d: d.CloudStatus
         ),
         DiagnosticSensor(
-            coordinator,
-            "measuredSupply",
-            "Measured Supply Airflow",
-            lambda d: d.MeasuredSupply,
-        ),
-        DiagnosticSensor(
-            coordinator,
-            "measuredExtract",
-            "Measured Extract Airflow",
-            lambda d: d.MeasuredExtract,
-        ),
-        DiagnosticSensor(
-            coordinator,
-            "cfSupplyFanLoad",
-            "Constant Flow Supply Fan Load",
-            lambda d: d.cfSupplyFanLoad,
-        ),
-        DiagnosticSensor(
-            coordinator,
-            "cfExtractFanLoad",
-            "Constant Flow Extract Fan Load",
-            lambda d: d.cfExtractFanLoad,
-        ),
-        DiagnosticSensor(
             coordinator, "supplyAirflow", "Supply Airflow", lambda d: d.SupplyAirflow
         ),
         DiagnosticSensor(
@@ -181,6 +157,34 @@ async def async_setup_entry(
     for i in range(4):
         if coordinator.data.vocSensor(i) is not None:
             entities.append(VOCSensor(coordinator, i))
+
+    if coordinator.data.cfSupported:
+        entities += [
+            DiagnosticSensor(
+                coordinator,
+                "measuredSupply",
+                "Measured Supply Airflow",
+                lambda d: d.MeasuredSupply,
+            ),
+            DiagnosticSensor(
+                coordinator,
+                "measuredExtract",
+                "Measured Extract Airflow",
+                lambda d: d.MeasuredExtract,
+            ),
+            DiagnosticSensor(
+                coordinator,
+                "cfSupplyFanLoad",
+                "Constant Flow Supply Fan Load",
+                lambda d: d.cfSupplyFanLoad,
+            ),
+            DiagnosticSensor(
+                coordinator,
+                "cfExtractFanLoad",
+                "Constant Flow Extract Fan Load",
+                lambda d: d.cfExtractFanLoad,
+            ),
+        ]
 
     async_add_entities(entities)
 
@@ -469,7 +473,7 @@ class TotalUptimeYearsSensor(EasyControls3BaseEntity, SensorEntity):
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_TotalUptimeYears"
-        self._attr_name = "Total Uptime Years"
+        self._attr_name = "Uptime Years Component"
 
     @property
     def native_value(self) -> int | None:
@@ -486,7 +490,7 @@ class TotalUptimeHoursSensor(EasyControls3BaseEntity, SensorEntity):
     def __init__(self, coordinator: EasyControls3Coordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_TotalUptimeHours"
-        self._attr_name = "Total Uptime Hours"
+        self._attr_name = "Uptime Hours Component"
 
     @property
     def native_value(self) -> int | None:

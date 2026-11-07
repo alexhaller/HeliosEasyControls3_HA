@@ -22,71 +22,73 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator: EasyControls3Coordinator = hass.data[DOMAIN][config_entry.entry_id]
-    async_add_entities(
-        [
-            DefrostingBinarySensor(coordinator),
-            EmergencyStopBinarySensor(coordinator),
-            BypassBinarySensor(coordinator),
-            StateBinarySensor(
-                coordinator,
-                "ioError",
-                "Error Output",
-                lambda d: d.IoError,
-                device_class=BinarySensorDeviceClass.PROBLEM,
-            ),
-            StateBinarySensor(
-                coordinator,
-                "ioHeater",
-                "Heater Active",
-                lambda d: d.IoHeater,
-                icon="mdi:radiator",
-            ),
-            StateBinarySensor(
-                coordinator,
-                "ioExtraHeater",
-                "Extra Heater Active",
-                lambda d: d.IoExtraHeater,
-                icon="mdi:radiator",
-            ),
-            StateBinarySensor(
-                coordinator,
-                "limpMode",
-                "Limp Mode",
-                lambda d: d.LimpMode,
-                device_class=BinarySensorDeviceClass.PROBLEM,
-                diagnostic=True,
-            ),
-            StateBinarySensor(
-                coordinator,
-                "constantAirflowAlert",
-                "Constant Airflow Alert",
-                lambda d: d.ConstantAirflowAlert,
-                device_class=BinarySensorDeviceClass.PROBLEM,
-                diagnostic=True,
-            ),
-            StateBinarySensor(
-                coordinator,
-                "deviceEnabled",
-                "Device Enabled",
-                lambda d: d.DeviceEnabled,
-                diagnostic=True,
-            ),
+    entities: list[EasyControls3BaseEntity] = [
+        DefrostingBinarySensor(coordinator),
+        EmergencyStopBinarySensor(coordinator),
+        BypassBinarySensor(coordinator),
+        StateBinarySensor(
+            coordinator,
+            "ioError",
+            "Error Output",
+            lambda d: d.IoError,
+            device_class=BinarySensorDeviceClass.PROBLEM,
+        ),
+        StateBinarySensor(
+            coordinator,
+            "ioHeater",
+            "Heater Active",
+            lambda d: d.IoHeater,
+            icon="mdi:radiator",
+        ),
+        StateBinarySensor(
+            coordinator,
+            "ioExtraHeater",
+            "Extra Heater Active",
+            lambda d: d.IoExtraHeater,
+            icon="mdi:radiator",
+        ),
+        StateBinarySensor(
+            coordinator,
+            "limpMode",
+            "Limp Mode",
+            lambda d: d.LimpMode,
+            device_class=BinarySensorDeviceClass.PROBLEM,
+            diagnostic=True,
+        ),
+        StateBinarySensor(
+            coordinator,
+            "constantAirflowAlert",
+            "Constant Airflow Alert",
+            lambda d: d.ConstantAirflowAlert,
+            device_class=BinarySensorDeviceClass.PROBLEM,
+            diagnostic=True,
+        ),
+        StateBinarySensor(
+            coordinator,
+            "deviceEnabled",
+            "Device Enabled",
+            lambda d: d.DeviceEnabled,
+            diagnostic=True,
+        ),
+        StateBinarySensor(
+            coordinator,
+            "torConnected",
+            "Post Heater Module Connected",
+            lambda d: d.TorConnected,
+            diagnostic=True,
+        ),
+    ]
+    if coordinator.data.cfSupported:
+        entities.append(
             StateBinarySensor(
                 coordinator,
                 "cfLimiterActive",
                 "Constant Flow Limiter Active",
                 lambda d: d.CfLimiterActive,
                 diagnostic=True,
-            ),
-            StateBinarySensor(
-                coordinator,
-                "torConnected",
-                "Post Heater Module Connected",
-                lambda d: d.TorConnected,
-                diagnostic=True,
-            ),
-        ]
-    )
+            )
+        )
+    async_add_entities(entities)
 
 
 class DefrostingBinarySensor(EasyControls3BaseEntity, BinarySensorEntity):

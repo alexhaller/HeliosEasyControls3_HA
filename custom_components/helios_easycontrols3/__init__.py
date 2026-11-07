@@ -166,4 +166,5 @@ class EasyControls3BaseEntity(CoordinatorEntity[EasyControls3Coordinator]):
             name=self._device.deviceModel,
             manufacturer="Helios",
             model=self._device.deviceType,
+            sw_version=self._device.firmwareVersion,
         )

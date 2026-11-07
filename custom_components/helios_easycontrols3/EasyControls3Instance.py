@@ -24,6 +24,9 @@ class WriteRejected(HomeAssistantError):
 # ---------------------------------------------------------------------------
 
 # General info (buf = reg)
+# Application firmware version, one component per word, little-endian (buf 2-10)
+_BUF_SW_VERSION_FIRST = 2
+_SW_VERSION_WORDS = 9
 _BUF_SERIAL_MSW = 14
 _BUF_SERIAL_LSW = 15
 _BUF_MACHINE_TYPE = 16
@@ -122,7 +125,12 @@ _BUF_PARTIAL_BYPASS = 253
 _BUF_BYPASS_LOCKED = 254  # inverted: 1 = bypass off
 _BUF_POST_HEATER_WINTER_SETPOINT = 256
 
-# Constant flow (buf_start=281, reg_start=32768)
+# Constant flow (buf_start=281, reg_start=32768). Firmware 1.0.9 keeps self-test
+# registers at 0x8001-0x8006; only 1.0.29 is verified to hold the constant-flow
+# setpoints there, so the block is used from that version on only.
+_BUF_CONSTANT_FLOW = 281
+_CONSTANT_FLOW_RANGE_WORDS = 16
+_CF_MIN_FIRMWARE = (1, 0, 29)
 _BUF_CF_AWAY_SUPPLY_AIRFLOW = 282
 _BUF_CF_AWAY_EXTRACT_AIRFLOW = 283
 _BUF_CF_HOME_SUPPLY_AIRFLOW = 284
@@ -139,6 +147,7 @@ _BUF_CF_EXTRACT_FANLOAD = 295
 # two tornado blocks of a post-heater module — are omitted from the reply, so
 # this block's position shifts per unit and has to be resolved at parse time.
 _BUF_WEEKLY_SCHEDULE = 497
+_WEEKLY_SCHEDULE_RANGE_WORDS = 169
 _EXTENDED_RANGE_WORDS = 39
 _EXT_CONDENSATION_PREVENTION = 1
 _EXT_SUPPLY_AIRFLOW = 3
@@ -270,6 +279,21 @@ def _date_or_none(day: int, month: int, year: int) -> datetime.date | None:
         return None
 
 
+def _firmware_version(data: bytes) -> tuple[int, ...] | None:
+    """Return the application firmware version the web UI shows, e.g. (1, 0, 29)."""
+    parts = [
+        int.from_bytes(data[offset * 2 : offset * 2 + 2], "little")
+        for offset in range(
+            _BUF_SW_VERSION_FIRST, _BUF_SW_VERSION_FIRST + _SW_VERSION_WORDS
+        )
+    ]
+    if 0xFFFF in parts or not any(parts):
+        return None
+    while parts[0] == 0:
+        parts.pop(0)
+    return tuple(parts)
+
+
 def _find_extended_start(data: bytes) -> int | None:
     """Locate the extended block by walking the reply's range length markers.
 
@@ -278,6 +302,9 @@ def _find_extended_start(data: bytes) -> int | None:
     ranges may or may not be present.
     """
     total = len(data) // 2
+    # The walk starts from a fixed offset, so confirm the layout up to it first.
+    if _word(data, _BUF_WEEKLY_SCHEDULE) != _WEEKLY_SCHEDULE_RANGE_WORDS:
+        return None
     offset = _BUF_WEEKLY_SCHEDULE
     while offset < total:
         length = _word(data, offset)
@@ -295,6 +322,9 @@ class EasyControls3Instance:
         self._url: str = "ws://" + url + ":80"
         self._deviceModel: str | None = None
         self._deviceType: str | None = None
+        self._reportedUnknownDevice = False
+        self._firmwareVersion: tuple[int, ...] | None = None
+        self._cfSupported = False
         self._SerialNR: int | None = None
         self._instanceState: KWLState | None = None
         self._CurrentFanSpeed: int | None = None
@@ -468,10 +498,30 @@ class EasyControls3Instance:
         self._parse_extended(data)
 
     def _parse_device_info(self, data: bytes) -> None:
-        self._deviceModel = deviceInfo["device_model_data"][
-            _low(data, _BUF_MACHINE_MODEL)
-        ]
-        self._deviceType = deviceInfo["device_type_data"][_low(data, _BUF_MACHINE_TYPE)]
+        model_code = _low(data, _BUF_MACHINE_MODEL)
+        type_code = _low(data, _BUF_MACHINE_TYPE)
+        models = deviceInfo["device_model_data"]
+        types = deviceInfo["device_type_data"]
+        # Newer units report codes the lookup tables do not have yet
+        known = model_code < len(models) and type_code < len(types)
+        self._deviceModel = (
+            models[model_code]
+            if model_code < len(models)
+            else f"Unknown model ({model_code})"
+        )
+        self._deviceType = (
+            types[type_code]
+            if type_code < len(types)
+            else f"Unknown type ({type_code})"
+        )
+        if not known and not self._reportedUnknownDevice:
+            self._reportedUnknownDevice = True
+            LOGGER.warning(
+                "Unknown Helios device codes model=%s type=%s; please report them",
+                model_code,
+                type_code,
+            )
+        self._firmwareVersion = _firmware_version(data)
         self._SerialNR = _word(data, _BUF_SERIAL_MSW) * 65536 + _word(
             data, _BUF_SERIAL_LSW
         )
@@ -608,6 +658,13 @@ class EasyControls3Instance:
         )
 
     def _parse_constant_flow(self, data: bytes) -> None:
+        self._cfSupported = (
+            _word(data, _BUF_CONSTANT_FLOW) == _CONSTANT_FLOW_RANGE_WORDS
+            and self._firmwareVersion is not None
+            and self._firmwareVersion >= _CF_MIN_FIRMWARE
+        )
+        if not self._cfSupported:
+            return
         self._cfBaseAirflow = {
             "away_supply": _word(data, _BUF_CF_AWAY_SUPPLY_AIRFLOW),
             "away_extract": _word(data, _BUF_CF_AWAY_EXTRACT_AIRFLOW),
@@ -672,8 +729,13 @@ class EasyControls3Instance:
                 (_REG_BOOST_TIMER, duration), (_REG_INDIVIDUAL_TIMER, 0)
             )
         elif wantedKWLState is KWLState.Individual:
+            assert self._individualModeDuration is not None
+            duration = (
+                self._individualModeDuration.hour * 60
+                + self._individualModeDuration.minute
+            )
             cmd = self._build_write_command(
-                (_REG_BOOST_TIMER, 0), (_REG_INDIVIDUAL_TIMER, 0x96)
+                (_REG_BOOST_TIMER, 0), (_REG_INDIVIDUAL_TIMER, duration)
             )
         else:
             raise TypeError("wantedKWLState must be an instance of KWLState Enum")
@@ -919,6 +981,16 @@ class EasyControls3Instance:
     @property
     def deviceModel(self) -> str | None:
         return self._deviceModel
+
+    @property
+    def firmwareVersion(self) -> str | None:
+        if self._firmwareVersion is None:
+            return None
+        return ".".join(str(part) for part in self._firmwareVersion)
+
+    @property
+    def cfSupported(self) -> bool:
+        return self._cfSupported
 
     @property
     def deviceType(self) -> str | None:
