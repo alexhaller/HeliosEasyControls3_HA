@@ -1,3 +1,9 @@
+## [3.2.0](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v3.1.2...v3.2.0) (2026-11-09)
+
+### Features
+
+* add a fan entity and use the web UI limits for the air temperature targets ([81bcff6](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/81bcff6588884d451407a9fd79aaf67aeca6da08))
+
 ## [3.1.2](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v3.1.1...v3.1.2) (2026-11-09)
 
 ### Bug Fixes
