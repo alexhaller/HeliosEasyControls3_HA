@@ -17,6 +17,16 @@ class WriteRejected(HomeAssistantError):
     """The device did not acknowledge a write command."""
 
 
+class DeviceTimeout(HomeAssistantError, TimeoutError):
+    """The device accepted the connection but did not answer in time."""
+
+
+# Upper bound for one connect + request + reply round trip. A unit that accepts
+# the socket but never answers would otherwise block polling and, through the
+# lock, every write behind it.
+_EXCHANGE_TIMEOUT = 10  # seconds
+
+
 # ---------------------------------------------------------------------------
 # Read buffer offsets  (byte index = offset * 2 / offset * 2 + 1)
 # formula: buf_offset = range_buf_start + (register - range_reg_start)
@@ -474,12 +484,21 @@ class EasyControls3Instance:
         LOGGER.debug("%s: write acknowledged", context)
 
     async def _exchangeData(self, request: bytes) -> bytes:
-        async with self._lock, connect(self._url) as websocket:
-            LOGGER.debug("connected")
-            await websocket.send(request)
-            LOGGER.debug("sent")
-            response = await websocket.recv()
-            return cast(bytes, response)
+        async with self._lock:
+            try:
+                async with (
+                    asyncio.timeout(_EXCHANGE_TIMEOUT),
+                    connect(self._url) as websocket,
+                ):
+                    LOGGER.debug("connected")
+                    await websocket.send(request)
+                    LOGGER.debug("sent")
+                    response = await websocket.recv()
+                    return cast(bytes, response)
+            except TimeoutError as err:
+                raise DeviceTimeout(
+                    f"no reply from {self._url} within {_EXCHANGE_TIMEOUT} s"
+                ) from err
 
     # ---------------------------------------------------------------------------
     # Read
