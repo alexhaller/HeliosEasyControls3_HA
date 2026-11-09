@@ -4,8 +4,9 @@ HACS custom integration for the **Helios KWL easyControls 3.0** ventilation unit
 
 ## Installation
 
-1. Add via HACS as a custom repository
-2. After restart, search for **Helios easyControls 3.0** in the integration setup
+1. Open the Marketplace (HACS), search for **Helios easyControls 3.0** and download it
+2. Restart Home Assistant, then add it under *Settings → Devices & services → Add integration →
+   Helios easyControls 3.0*
 3. Enter the device's IP address — no credentials required
 
 The integration uses the device serial number for stable unique entity IDs (survive IP changes).
