@@ -5,7 +5,7 @@ from __future__ import annotations
 from unittest.mock import patch
 
 import pytest
-from homeassistant.config_entries import SOURCE_USER
+from homeassistant.config_entries import SOURCE_IGNORE, SOURCE_USER
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers import device_registry as dr
@@ -242,4 +242,46 @@ async def test_reconfigure_different_unit_rejected(hass: HomeAssistant) -> None:
 
     assert result["type"] is FlowResultType.FORM
     assert result["errors"] == {"base": "wrong_device"}
+    assert entry.data == {"host": HOST}
+
+
+async def test_user_flow_host_case_insensitive(hass: HomeAssistant) -> None:
+    _add_entry(hass, "helios.local")
+    result = await _start(hass, SOURCE_USER)
+    with _unit():
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {"host": "Helios.Local"}
+        )
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "already_configured"
+
+
+async def test_reconfigure_host_case_insensitive(hass: HomeAssistant) -> None:
+    entry = _add_entry(hass)
+    _add_entry(hass, "helios.local")
+    result = await _start(hass, "reconfigure", entry)
+    with _unit():
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {"host": "Helios.Local"}
+        )
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "already_configured"
+    assert entry.data == {"host": HOST}
+
+
+async def test_reconfigure_host_of_ignored_entry(hass: HomeAssistant) -> None:
+    entry = _add_entry(hass)
+    MockConfigEntry(
+        domain=DOMAIN, unique_id=NEW_HOST, source=SOURCE_IGNORE, data={}
+    ).add_to_hass(hass)
+    result = await _start(hass, "reconfigure", entry)
+    with _unit():
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {"host": NEW_HOST}
+        )
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "already_configured"
     assert entry.data == {"host": HOST}

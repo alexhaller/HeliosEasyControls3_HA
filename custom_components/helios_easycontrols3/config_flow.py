@@ -36,7 +36,7 @@ _HOST_RE = re.compile(
 
 async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any]:
     """Validate the user input allows us to connect."""
-    host = data["host"].strip()
+    host = data["host"].strip().lower()
     if not _HOST_RE.match(host):
         raise InvalidHost
 
@@ -106,7 +106,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 host = info["title"]
                 if any(
                     other.unique_id == host
-                    for other in self._async_current_entries(include_ignore=False)
+                    for other in self._async_current_entries(include_ignore=True)
                     if other.entry_id != entry.entry_id
                 ):
                     return self.async_abort(reason="already_configured")
