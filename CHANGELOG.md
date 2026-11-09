@@ -1,3 +1,18 @@
+## [3.3.0](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v3.2.0...v3.3.0) (2026-11-09)
+
+### Features
+
+* **config_flow:** add reconfigure step to change the unit's host ([05ef3cc](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/05ef3ccd270b79a671388a4d655366fa228e0e76))
+
+### Bug Fixes
+
+* **config_flow:** abort with already_configured for a duplicate host ([a8e04e8](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/a8e04e8c48323ce4b176d8931837ef7a225b28ff))
+* **config_flow:** compare hosts case-insensitively and count ignored entries ([a1da980](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/a1da98026fd43c30e9ff094148a28d6233955c57))
+
+### Documentation
+
+* **readme:** install from the Marketplace search ([22b7ae4](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/22b7ae473dcf27b9ec52afc98020ca14c300c5e5)), closes [hacs/default#13645](https://github.com/hacs/default/issues/13645)
+
 ## [3.2.0](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v3.1.2...v3.2.0) (2026-11-09)
 
 ### Features
