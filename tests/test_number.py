@@ -77,3 +77,29 @@ async def test_constant_flow_writes_still_use_raw_values(unit: int) -> None:
         await entity.async_set_native_value(42)
         coordinator.data._set_int.assert_awaited_with(0x8001 + index, 42)
     assert coordinator.async_request_refresh.await_count == 6
+
+
+async def test_air_temp_targets_use_the_web_ui_limits() -> None:
+    coordinator = MagicMock(spec=EasyControls3Coordinator)
+    coordinator.data = _parsed(_frame())
+    hass = MagicMock()
+    entry = MagicMock()
+    hass.data = {DOMAIN: {entry.entry_id: coordinator}}
+    add_entities = MagicMock()
+    await async_setup_entry(hass, entry, add_entities)
+    limits = {
+        entity.unique_id.split("_", 1)[1]: (
+            entity.native_min_value,
+            entity.native_max_value,
+        )
+        for entity in add_entities.call_args.args[0]
+        if entity.unique_id.endswith("AirTempTarget")
+    }
+
+    assert limits == {
+        "homeAirTempTarget": (5.0, 25.0),
+        "awayAirTempTarget": (5.0, 25.0),
+        "boostAirTempTarget": (5.0, 25.0),
+        "individualAirTempTarget": (5.0, 25.0),
+        "extraAirTempTarget": (-10.0, 40.0),
+    }

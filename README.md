@@ -75,6 +75,7 @@ All entities belong to a single HA device. Within the device card:
 ### Controls
 | Entity | Type | Description |
 |---|---|---|
+| *(device name)* | Fan | Power, operating mode (presets AtHome / Away / Intensive / Individual) and fan speed of the active mode in one entity — for voice assistants and fan cards. Setting 0 % switches the unit off; the Individual mode's speed is set with its supply/extract numbers |
 | KWL State | Select | Operating mode: AtHome / Away / Intensive / Individual |
 | On/Off | Switch | Power the unit on or off |
 
@@ -84,7 +85,7 @@ All entities belong to a single HA device. Within the device card:
 | Fan Speed At Home / Away / Intensive | Number (%) | Target fan speed per profile |
 | Individual Extract / Supply Fan Speed | Number (%) | Per-fan speed for Individual mode |
 | Extra Extract / Supply Fan Speed | Number (%) | Per-fan speed for Extra mode |
-| Home / Away / Intensive / Extra / Individual Air Temp Target | Number (°C) | Supply air temperature target per profile |
+| Home / Away / Intensive / Extra / Individual Air Temp Target | Number (°C) | Supply air temperature target per profile; 5–25 °C as in the device's web UI (Extra has no UI limit and keeps −10–40 °C) |
 | RH Control Home / Away / Intensive | Switch | Enable humidity-driven fan speed |
 | CO2 Control Home / Away / Intensive | Switch | Enable CO2-driven fan speed (only shown if CO2 sensor present) |
 | RH Limit | Number (%) | Global humidity threshold |

@@ -120,6 +120,8 @@ async def async_setup_entry(
             "Extra Air Temp Target",
             lambda d: d.ExtraAirTempTarget,
             lambda d, v: d.setExtraAirTempTarget(v),
+            # The web UI binds no limits for the Extra target; keep the wide range
+            limits=(-10.0, 40.0),
         ),
         AirTempTargetNumber(
             coordinator,
@@ -304,8 +306,10 @@ class FanSpeedNumber(EasyControls3BaseEntity, NumberEntity):
 class AirTempTargetNumber(EasyControls3BaseEntity, NumberEntity):
     device_class = NumberDeviceClass.TEMPERATURE
     native_unit_of_measurement = UnitOfTemperature.CELSIUS
-    native_min_value = -10.0
-    native_max_value = 40.0
+    # The device's web UI binds the Home, Away, Intensive and Individual targets
+    # to min 5 / max 25 (EXT_*_AIR_TEMP_TARGET in bundle.js)
+    _attr_native_min_value = 5.0
+    _attr_native_max_value = 25.0
     native_step = 1.0
     entity_category = EntityCategory.CONFIG
 
@@ -316,12 +320,15 @@ class AirTempTargetNumber(EasyControls3BaseEntity, NumberEntity):
         name: str,
         getter: Callable[[EasyControls3Instance], float | None],
         setter: Callable[[EasyControls3Instance, float], Awaitable[None]],
+        limits: tuple[float, float] | None = None,
     ) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{self._device.serialNR}_{unique_suffix}"
         self._attr_name = name
         self._getter = getter
         self._setter = setter
+        if limits is not None:
+            self._attr_native_min_value, self._attr_native_max_value = limits
 
     @property
     def native_value(self) -> float | None:
