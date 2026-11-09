@@ -1,13 +1,17 @@
+from __future__ import annotations
+
 from typing import ClassVar
 
 from homeassistant.components.select import SelectEntity
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from . import EasyControls3BaseEntity, EasyControls3Coordinator
-from .const import DOMAIN
+from . import (
+    EasyControls3BaseEntity,
+    EasyControls3ConfigEntry,
+    EasyControls3Coordinator,
+)
 from .KWLStates import KWLState
 
 PARALLEL_UPDATES = 1
@@ -15,10 +19,10 @@ PARALLEL_UPDATES = 1
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    config_entry: ConfigEntry,
+    config_entry: EasyControls3ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    coordinator: EasyControls3Coordinator = hass.data[DOMAIN][config_entry.entry_id]
+    coordinator = config_entry.runtime_data
     async_add_entities(
         [
             StateSelect(coordinator),

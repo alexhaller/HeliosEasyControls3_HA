@@ -1,4 +1,6 @@
 # ruff: noqa: N999 -- module/package names are fixed by the HA domain and the upstream project
+from __future__ import annotations
+
 deviceInfo = {
     "device_model_data": [
         "unknown",

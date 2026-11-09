@@ -1,5 +1,7 @@
 """EasyControls3 Home Assistant integration."""
 
+from __future__ import annotations
+
 import logging
 from datetime import timedelta
 
@@ -22,6 +24,7 @@ from .const import DOMAIN, LEGACY_DOMAIN
 from .EasyControls3Instance import EasyControls3Instance
 
 type EasyControls3Coordinator = DataUpdateCoordinator[EasyControls3Instance]
+type EasyControls3ConfigEntry = ConfigEntry[EasyControls3Coordinator]
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -116,20 +119,23 @@ async def _async_adopt_legacy_entry(hass: HomeAssistant, entry: ConfigEntry) -> 
     _LOGGER.info("Migrated %s from %s to %s", entry.title, LEGACY_DOMAIN, DOMAIN)
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_setup_entry(
+    hass: HomeAssistant, entry: EasyControls3ConfigEntry
+) -> bool:
     await _async_adopt_legacy_entry(hass, entry)
     device = EasyControls3Instance(entry.data["host"])
 
-    async def _async_update_data():
+    async def _async_update_data() -> EasyControls3Instance:
         try:
             await device.readCurrentData()
         except Exception as err:
             raise UpdateFailed(f"Error communicating with device: {err}") from err
         return device
 
-    coordinator = DataUpdateCoordinator(
+    coordinator: EasyControls3Coordinator = DataUpdateCoordinator(
         hass,
         _LOGGER,
+        config_entry=entry,
         name=DOMAIN,
         update_method=_async_update_data,
         update_interval=SCAN_INTERVAL,
@@ -137,18 +143,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     await coordinator.async_config_entry_first_refresh()
 
-    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
+    entry.runtime_data = coordinator
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 
 
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_unload_entry(
+    hass: HomeAssistant, entry: EasyControls3ConfigEntry
+) -> bool:
     """Unload a config entry."""
-    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
-    if unload_ok:
-        hass.data[DOMAIN].pop(entry.entry_id)
-    return unload_ok
+    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
 
 class EasyControls3BaseEntity(CoordinatorEntity[EasyControls3Coordinator]):

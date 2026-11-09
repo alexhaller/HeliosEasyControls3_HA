@@ -1,16 +1,20 @@
+from __future__ import annotations
+
 from collections.abc import Callable
 
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
     BinarySensorEntity,
 )
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from . import EasyControls3BaseEntity, EasyControls3Coordinator
-from .const import DOMAIN
+from . import (
+    EasyControls3BaseEntity,
+    EasyControls3ConfigEntry,
+    EasyControls3Coordinator,
+)
 from .EasyControls3Instance import EasyControls3Instance
 
 PARALLEL_UPDATES = 0
@@ -18,10 +22,10 @@ PARALLEL_UPDATES = 0
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    config_entry: ConfigEntry,
+    config_entry: EasyControls3ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    coordinator: EasyControls3Coordinator = hass.data[DOMAIN][config_entry.entry_id]
+    coordinator = config_entry.runtime_data
     entities: list[EasyControls3BaseEntity] = [
         DefrostingBinarySensor(coordinator),
         EmergencyStopBinarySensor(coordinator),

@@ -5,7 +5,6 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from custom_components.helios_easycontrols3 import EasyControls3Coordinator
-from custom_components.helios_easycontrols3.const import DOMAIN
 from custom_components.helios_easycontrols3.number import (
     ConstantFlowNumber,
     async_setup_entry,
@@ -20,7 +19,7 @@ async def _cf_entities() -> tuple[EasyControls3Coordinator, list[ConstantFlowNum
     coordinator.async_request_refresh = AsyncMock()
     hass = MagicMock()
     entry = MagicMock()
-    hass.data = {DOMAIN: {entry.entry_id: coordinator}}
+    entry.runtime_data = coordinator
     add_entities = MagicMock()
     await async_setup_entry(hass, entry, add_entities)
     return coordinator, [
@@ -84,7 +83,7 @@ async def test_air_temp_targets_use_the_web_ui_limits() -> None:
     coordinator.data = _parsed(_frame())
     hass = MagicMock()
     entry = MagicMock()
-    hass.data = {DOMAIN: {entry.entry_id: coordinator}}
+    entry.runtime_data = coordinator
     add_entities = MagicMock()
     await async_setup_entry(hass, entry, add_entities)
     limits = {

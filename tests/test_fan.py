@@ -6,7 +6,6 @@ import pytest
 from homeassistant.exceptions import ServiceValidationError
 
 from custom_components.helios_easycontrols3 import EasyControls3Coordinator
-from custom_components.helios_easycontrols3.const import DOMAIN
 from custom_components.helios_easycontrols3.fan import (
     VentilationFan,
     async_setup_entry,
@@ -31,7 +30,7 @@ async def _fan(
     coordinator.async_request_refresh = AsyncMock()
     hass = MagicMock()
     entry = MagicMock()
-    hass.data = {DOMAIN: {entry.entry_id: coordinator}}
+    entry.runtime_data = coordinator
     add_entities = MagicMock()
     await async_setup_entry(hass, entry, add_entities)
     (fan,) = add_entities.call_args.args[0]
