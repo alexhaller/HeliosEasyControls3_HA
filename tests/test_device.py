@@ -6,10 +6,13 @@ import datetime
 from unittest.mock import AsyncMock
 
 import pytest
+from homeassistant.exceptions import HomeAssistantError
+from websockets.exceptions import ConnectionClosedError
 
 from custom_components.helios_easycontrols3.EasyControls3Instance import (
     _WRITE_OK,
     EasyControls3Instance,
+    _minutes_to_time,
 )
 from custom_components.helios_easycontrols3.KWLStates import KWLState
 
@@ -139,3 +142,97 @@ def test_constant_flow_unit_cleared_when_unsupported(data: bytes) -> None:
 
 def test_constant_flow_unit_before_first_reply() -> None:
     assert EasyControls3Instance(HOST).cfFanSpeedUnit is None
+
+
+@pytest.mark.parametrize("word", [248, 249])
+def test_unset_filter_date_does_not_break_parsing(word: int) -> None:
+    """A never-set filter date (day 248 or month 249 = 0) must not fail the parse."""
+    data = bytearray(_frame())
+    data[word * 2 + 1] = 0
+    device = _parsed(bytes(data))
+    assert device.filterChanged is None
+    assert device.filterDue is None
+    assert device.cfSupported  # parsing went on past the date
+
+
+def test_set_filter_date_still_parsed() -> None:
+    data = bytearray(_frame())
+    data[250 * 2 + 1] = 26  # year since 2000
+    device = _parsed(bytes(data))
+    assert device.filterChanged == datetime.date(2026, 1, 1)
+    assert device.filterDue == datetime.date(2026, 1, 1) + datetime.timedelta(
+        days=device.filterInterval or 0
+    )
+
+
+@pytest.mark.parametrize(
+    ("minutes", "expected"),
+    [
+        (0, datetime.time(0, 0)),
+        (1439, datetime.time(23, 59)),
+        (1440, None),
+        (65535, None),
+    ],
+)
+def test_minutes_to_time_out_of_range(
+    minutes: int, expected: datetime.time | None
+) -> None:
+    assert _minutes_to_time(minutes) == expected
+
+
+@pytest.mark.parametrize(
+    ("word", "attribute"),
+    [
+        (198, "ExtraModeDuration"),
+        (246, "IntensivDuration"),
+        (247, "IndividualModeDuration"),
+    ],
+)
+def test_out_of_range_duration_does_not_break_parsing(
+    word: int, attribute: str
+) -> None:
+    """1440 min = 24 h does not fit a time of day; the rest must still parse."""
+    data = bytearray(_frame())
+    data[word * 2 : word * 2 + 2] = (1440).to_bytes(2, "big")
+    device = _parsed(bytes(data))
+    assert getattr(device, attribute) is None
+    assert device.filterChanged == datetime.date(2000, 1, 1)
+
+
+async def test_switch_to_unknown_duration_is_a_clean_error() -> None:
+    data = bytearray(_frame())
+    data[246 * 2 : 246 * 2 + 2] = (1440).to_bytes(2, "big")
+    device = _parsed(bytes(data))
+    device._exchangeData = AsyncMock(return_value=_WRITE_OK)
+    with pytest.raises(HomeAssistantError, match="intensive duration"):
+        await device.switchMode(KWLState.Intensive)
+    device._exchangeData.assert_not_awaited()
+
+
+@pytest.mark.parametrize(
+    "error",
+    [ConnectionRefusedError(), TimeoutError(), ConnectionClosedError(None, None)],
+)
+async def test_test_connection_false_when_unreachable(error: Exception) -> None:
+    device = EasyControls3Instance(HOST)
+    device._exchangeData = AsyncMock(side_effect=error)
+    assert await device.test_connection() is False
+
+
+async def test_test_connection_false_on_truncated_reply() -> None:
+    device = EasyControls3Instance(HOST)
+    device._exchangeData = AsyncMock(return_value=b"\x00\x01")
+    assert await device.test_connection() is False
+
+
+async def test_test_connection_true_on_valid_reply() -> None:
+    device = EasyControls3Instance(HOST)
+    device._exchangeData = AsyncMock(return_value=_frame())
+    assert await device.test_connection() is True
+
+
+async def test_test_connection_does_not_swallow_bugs() -> None:
+    device = EasyControls3Instance(HOST)
+    device._exchangeData = AsyncMock(side_effect=ValueError("bug"))
+    with pytest.raises(ValueError, match="bug"):
+        await device.test_connection()

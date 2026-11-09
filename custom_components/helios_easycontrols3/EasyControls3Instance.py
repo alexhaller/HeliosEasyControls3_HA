@@ -2,10 +2,10 @@
 import asyncio
 import datetime
 import logging
-from typing import cast
 
 from homeassistant.exceptions import HomeAssistantError
 from websockets.asyncio.client import connect
+from websockets.exceptions import WebSocketException
 
 from .deviceList import deviceInfo, extraDeviceTypes
 from .KWLStates import CellState, KWLState
@@ -15,6 +15,18 @@ LOGGER = logging.getLogger(__name__)
 
 class WriteRejected(HomeAssistantError):
     """The device did not acknowledge a write command."""
+
+
+class DeviceTimeout(HomeAssistantError, TimeoutError):
+    """The device accepted the connection but did not answer in time."""
+
+
+# Upper bound for one connect + request + reply round trip. A unit that accepts
+# the socket but never answers would otherwise block polling and, through the
+# lock, every write behind it.
+_EXCHANGE_TIMEOUT = 10  # seconds
+# The closing handshake gets its own short bound instead of websockets' 10 s
+_CLOSE_TIMEOUT = 2  # seconds
 
 
 # ---------------------------------------------------------------------------
@@ -267,7 +279,10 @@ def _kelvin_word_to_celsius(data: bytes, offset: int) -> float:
     return round(_word(data, offset) / 100 - 273.15, 1)
 
 
-def _minutes_to_time(minutes: int) -> datetime.time:
+def _minutes_to_time(minutes: int) -> datetime.time | None:
+    """Convert a duration in minutes; None if it does not fit on a 24 h clock."""
+    if minutes >= 24 * 60:
+        return None
     return datetime.time(minutes // 60, minutes % 60)
 
 
@@ -474,12 +489,23 @@ class EasyControls3Instance:
         LOGGER.debug("%s: write acknowledged", context)
 
     async def _exchangeData(self, request: bytes) -> bytes:
-        async with self._lock, connect(self._url) as websocket:
-            LOGGER.debug("connected")
-            await websocket.send(request)
-            LOGGER.debug("sent")
-            response = await websocket.recv()
-            return cast(bytes, response)
+        async with self._lock:
+            try:
+                async with (
+                    asyncio.timeout(_EXCHANGE_TIMEOUT),
+                    connect(self._url, close_timeout=_CLOSE_TIMEOUT) as websocket,
+                ):
+                    LOGGER.debug("connected")
+                    await websocket.send(request)
+                    LOGGER.debug("sent")
+                    response = await websocket.recv()
+                    if not isinstance(response, bytes):
+                        raise WebSocketException("unexpected text frame")
+                    return response
+            except TimeoutError as err:
+                raise DeviceTimeout(
+                    f"no reply from {self._url} within {_EXCHANGE_TIMEOUT} s"
+                ) from err
 
     # ---------------------------------------------------------------------------
     # Read
@@ -627,10 +653,13 @@ class EasyControls3Instance:
         self._filterInterval = _word(data, _BUF_FILTER_INTERVAL)
         day = _low(data, _BUF_FILTER_CHANGED_DAY)
         month = _low(data, _BUF_FILTER_CHANGED_MONTH)
-        year = 2000 + _low(data, _BUF_FILTER_CHANGED_YEAR)
-        self._filterChanged = datetime.date(year, month, day)
-        self._filterDue = self._filterChanged + datetime.timedelta(
-            days=int(self._filterInterval)
+        year = _low(data, _BUF_FILTER_CHANGED_YEAR)
+        # A unit whose filter date was never set reports day/month 0
+        self._filterChanged = _date_or_none(day, month, year)
+        self._filterDue = (
+            self._filterChanged + datetime.timedelta(days=int(self._filterInterval))
+            if self._filterChanged
+            else None
         )
         self._atHomeFanSpeed = _low(data, _BUF_HOME_SPEED)
         self._awayFanSpeed = _low(data, _BUF_AWAY_SPEED)
@@ -726,13 +755,15 @@ class EasyControls3Instance:
                 (_REG_STATE, 1), (_REG_BOOST_TIMER, 0), (_REG_INDIVIDUAL_TIMER, 0)
             )
         elif wantedKWLState is KWLState.Intensive:
-            assert self._intensivDuration is not None
+            if self._intensivDuration is None:
+                raise HomeAssistantError("intensive duration not known yet")
             duration = self._intensivDuration.hour * 60 + self._intensivDuration.minute
             cmd = self._build_write_command(
                 (_REG_BOOST_TIMER, duration), (_REG_INDIVIDUAL_TIMER, 0)
             )
         elif wantedKWLState is KWLState.Individual:
-            assert self._individualModeDuration is not None
+            if self._individualModeDuration is None:
+                raise HomeAssistantError("individual duration not known yet")
             duration = (
                 self._individualModeDuration.hour * 60
                 + self._individualModeDuration.minute
@@ -956,7 +987,10 @@ class EasyControls3Instance:
             response = await self._exchangeData(_READ_REQUEST)
             self._parseData(response)
             return True
-        except Exception:
+        except (OSError, WebSocketException, IndexError):
+            # Unreachable, no reply in time (TimeoutError is an OSError), not a
+            # WebSocket peer, or a reply too short to be a unit's frame. Anything
+            # else is a bug and propagates to the config flow's "unknown" error.
             LOGGER.debug("test_connection failed", exc_info=True)
             return False
 
