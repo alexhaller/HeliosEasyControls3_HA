@@ -7,7 +7,7 @@ from typing import cast
 from homeassistant.exceptions import HomeAssistantError
 from websockets.asyncio.client import connect
 
-from .deviceList import deviceInfo
+from .deviceList import deviceInfo, extraDeviceTypes
 from .KWLStates import CellState, KWLState
 
 LOGGER = logging.getLogger(__name__)
@@ -504,17 +504,17 @@ class EasyControls3Instance:
         models = deviceInfo["device_model_data"]
         types = deviceInfo["device_type_data"]
         # Newer units report codes the lookup tables do not have yet
-        known = model_code < len(models) and type_code < len(types)
+        if type_code < len(types):
+            device_type: str | None = types[type_code]
+        else:
+            device_type = extraDeviceTypes.get(type_code)
+        known = model_code < len(models) and device_type is not None
         self._deviceModel = (
             models[model_code]
             if model_code < len(models)
             else f"Unknown model ({model_code})"
         )
-        self._deviceType = (
-            types[type_code]
-            if type_code < len(types)
-            else f"Unknown type ({type_code})"
-        )
+        self._deviceType = device_type or f"Unknown type ({type_code})"
         if not known and not self._reportedUnknownDevice:
             self._reportedUnknownDevice = True
             LOGGER.warning(

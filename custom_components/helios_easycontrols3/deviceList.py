@@ -166,3 +166,9 @@ deviceInfo = {
         "A3732-2",
     ],
 }
+
+# Type codes beyond device_type_data, confirmed from units in the field. Kept
+# apart so the codes in between stay unknown and are still reported.
+extraDeviceTypes: dict[int, str] = {
+    107: "40055-005",  # KWL 500 W ET R, issue #3
+}

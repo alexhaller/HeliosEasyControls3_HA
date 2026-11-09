@@ -93,6 +93,16 @@ def test_unknown_device_codes(caplog: pytest.LogCaptureFixture) -> None:
     assert caplog.text.count("Unknown Helios device codes") == 1
 
 
+@pytest.mark.parametrize(
+    ("code", "expected"), [(107, "40055-005"), (106, "Unknown type (106)")]
+)
+def test_device_type_beyond_the_table(code: int, expected: str) -> None:
+    """Confirmed codes past the table are named; the gap stays unknown."""
+    data = bytearray(_frame())
+    data[16 * 2 + 1] = code  # machine type
+    assert _parsed(bytes(data)).deviceType == expected
+
+
 async def test_individual_mode_uses_configured_duration() -> None:
     device = _parsed(_frame())
     device._individualModeDuration = datetime.time(0, 15)
