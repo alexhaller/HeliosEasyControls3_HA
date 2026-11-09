@@ -1,3 +1,9 @@
+## [3.4.0](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v3.3.0...v3.4.0) (2026-11-09)
+
+### Features
+
+* add diagnostics and move to runtime_data ([dbadd33](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/dbadd33f776b04b20f19745840d325572b82e833))
+
 ## [3.3.0](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v3.2.0...v3.3.0) (2026-11-09)
 
 ### Features
