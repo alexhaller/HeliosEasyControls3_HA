@@ -1,3 +1,14 @@
+## [3.1.2](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v3.1.1...v3.1.2) (2026-11-09)
+
+### Bug Fixes
+
+* display gated device-selected CF airflow units ([68d02ce](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/68d02ce152325e08b14a718fb757b309ed84e521))
+* name device type 107 as 40055-005 ([3940bb5](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/3940bb524480c514e94b882ebc84573f71d22ae3)), closes [#3](https://github.com/alexhaller/HeliosEasyControls3_HA/issues/3)
+
+### Documentation
+
+* describe CF units and firmware compatibility assumption ([0b3d107](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/0b3d10796ba71331eeb99d6c06f5cea42d0361cc))
+
 ## [3.1.1](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v3.1.0...v3.1.1) (2026-11-07)
 
 ### Bug Fixes
