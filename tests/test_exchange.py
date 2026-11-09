@@ -8,6 +8,7 @@ from collections.abc import AsyncGenerator, Awaitable, Callable
 
 import pytest
 from websockets.asyncio.server import ServerConnection, serve
+from websockets.exceptions import WebSocketException
 
 from custom_components.helios_easycontrols3.EasyControls3Instance import (
     _WRITE_OK,
@@ -72,6 +73,30 @@ async def test_timeout_releases_the_lock(
     with pytest.raises(DeviceTimeout):
         await asyncio.wait_for(silent_unit.readCurrentData(), 5)
     assert not silent_unit._lock.locked()
+
+
+@pytest.fixture
+async def text_unit() -> AsyncGenerator[EasyControls3Instance]:
+    """A server that answers with a text frame, not a binary one."""
+
+    async def handler(ws: ServerConnection) -> None:
+        await ws.recv()
+        await ws.send("hello")
+
+    async for device in _unit(handler):
+        yield device
+
+
+async def test_text_frame_is_a_typed_error(text_unit: EasyControls3Instance) -> None:
+    with pytest.raises(WebSocketException, match="text frame"):
+        await text_unit._exchangeData(b"\x00")
+
+
+async def test_text_frame_reads_as_cannot_connect(
+    text_unit: EasyControls3Instance,
+) -> None:
+    """test_connection returning False is what the config flow shows as cannot_connect."""
+    assert await text_unit.test_connection() is False
 
 
 async def test_answering_unit_is_unaffected(acking_unit: EasyControls3Instance) -> None:

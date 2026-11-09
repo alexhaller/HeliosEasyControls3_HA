@@ -2,7 +2,6 @@
 import asyncio
 import datetime
 import logging
-from typing import cast
 
 from homeassistant.exceptions import HomeAssistantError
 from websockets.asyncio.client import connect
@@ -26,6 +25,8 @@ class DeviceTimeout(HomeAssistantError, TimeoutError):
 # the socket but never answers would otherwise block polling and, through the
 # lock, every write behind it.
 _EXCHANGE_TIMEOUT = 10  # seconds
+# The closing handshake gets its own short bound instead of websockets' 10 s
+_CLOSE_TIMEOUT = 2  # seconds
 
 
 # ---------------------------------------------------------------------------
@@ -492,13 +493,15 @@ class EasyControls3Instance:
             try:
                 async with (
                     asyncio.timeout(_EXCHANGE_TIMEOUT),
-                    connect(self._url) as websocket,
+                    connect(self._url, close_timeout=_CLOSE_TIMEOUT) as websocket,
                 ):
                     LOGGER.debug("connected")
                     await websocket.send(request)
                     LOGGER.debug("sent")
                     response = await websocket.recv()
-                    return cast(bytes, response)
+                    if not isinstance(response, bytes):
+                        raise WebSocketException("unexpected text frame")
+                    return response
             except TimeoutError as err:
                 raise DeviceTimeout(
                     f"no reply from {self._url} within {_EXCHANGE_TIMEOUT} s"
