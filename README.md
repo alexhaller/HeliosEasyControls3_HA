@@ -9,6 +9,7 @@ HACS custom integration for the **Helios KWL easyControls 3.0** ventilation unit
 3. Enter the device's IP address — no credentials required
 
 The integration uses the device serial number for stable unique entity IDs (survive IP changes).
+If the unit's IP address or hostname changes, use **Reconfigure** on the entry (three-dot menu) to enter the new one — no need to remove the entry.
 
 ### Upgrading from v2 or older
 

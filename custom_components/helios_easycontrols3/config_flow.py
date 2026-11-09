@@ -8,6 +8,7 @@ import probatio
 from homeassistant import config_entries, exceptions
 from homeassistant.config_entries import ConfigFlowResult
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import device_registry as dr
 
 from .const import DOMAIN
 from .EasyControls3Instance import EasyControls3Instance
@@ -44,7 +45,7 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
     if not result:
         raise CannotConnect
 
-    return {"title": host}
+    return {"title": host, "serial": easyControlsInstance.serialNR}
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -77,6 +78,69 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="user", data_schema=DATA_SCHEMA, errors=errors
+        )
+
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Point the entry at a new host without losing its device and entities.
+
+        The unique_id stays the host, so it is moved along with it. The unit
+        found at the new host must be the one the entry already has a device
+        for (identified by its serial number), otherwise the entities would be
+        silently re-pointed at a different unit.
+        """
+        entry = self._get_reconfigure_entry()
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            try:
+                info = await validate_input(self.hass, user_input)
+            except CannotConnect:
+                errors["base"] = "cannot_connect"
+            except InvalidHost:
+                errors["host"] = "invalid_host"
+            except Exception:
+                _LOGGER.exception("Unexpected exception")
+                errors["base"] = "unknown"
+            else:
+                host = info["title"]
+                if any(
+                    other.unique_id == host
+                    for other in self._async_current_entries(include_ignore=False)
+                    if other.entry_id != entry.entry_id
+                ):
+                    return self.async_abort(reason="already_configured")
+                known = {
+                    identifier
+                    for device in dr.async_entries_for_config_entry(
+                        dr.async_get(self.hass), entry.entry_id
+                    )
+                    for domain, identifier in device.identifiers
+                    if domain == DOMAIN
+                }
+                if known and str(info["serial"]) not in known:
+                    errors["base"] = "wrong_device"
+                else:
+                    return self.async_update_reload_and_abort(
+                        entry,
+                        unique_id=host,
+                        # Keep a title the user chose, follow one that is the host
+                        title=host
+                        if entry.title == entry.data["host"]
+                        else entry.title,
+                        data_updates={"host": host},
+                    )
+
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=probatio.Schema(
+                {
+                    probatio.Required(
+                        "host", default=(user_input or entry.data)["host"]
+                    ): str
+                }
+            ),
+            errors=errors,
         )
 
     async def async_step_import(self, import_data: dict[str, Any]) -> ConfigFlowResult:
