@@ -2,7 +2,12 @@ from collections.abc import Awaitable, Callable
 
 from homeassistant.components.number import NumberDeviceClass, NumberEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import PERCENTAGE, UnitOfRatio, UnitOfTemperature
+from homeassistant.const import (
+    PERCENTAGE,
+    UnitOfRatio,
+    UnitOfTemperature,
+    UnitOfVolumeFlowRate,
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -242,7 +247,7 @@ async def async_setup_entry(
     ]
     if coordinator.data.cfSupported:
         entities += [
-            SettingNumber(
+            ConstantFlowNumber(
                 coordinator,
                 f"cfBaseAirflow_{key}",
                 f"Base Airflow {label}",
@@ -368,6 +373,21 @@ class SettingNumber(EasyControls3BaseEntity, NumberEntity):
     async def async_set_native_value(self, value: float) -> None:
         await self._setter(self._device, value)
         await self.coordinator.async_request_refresh()
+
+
+class ConstantFlowNumber(SettingNumber):
+    @property
+    def native_unit_of_measurement(self) -> str | None:
+        # Read on every update: changing the device's unit must not leave a stale
+        # label. Raw setpoints and writes are deliberately not converted.
+        unit = self._device.cfFanSpeedUnit
+        if unit is None:
+            return None
+        return {
+            0: UnitOfVolumeFlowRate.LITERS_PER_SECOND,
+            1: UnitOfVolumeFlowRate.CUBIC_METERS_PER_HOUR,
+            2: PERCENTAGE,
+        }.get(unit)
 
 
 class RHLimitNumber(EasyControls3BaseEntity, NumberEntity):

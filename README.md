@@ -375,7 +375,7 @@ gateway and mask, which is what confirms these offsets.
 | 20495 | 0x500F | 197 | A_CYC_EXTRA_SUPP_FAN | ✅ read/write | Extra supply fan % |
 | 20496 | 0x5010 | 198 | A_CYC_EXTRA_TIME | ✅ read/write | Extra mode duration (min) |
 | 20497 | 0x5011 | 199 | A_CYC_FIREPLACE_AIR_TEMP_TARGET | ✅ read/write | Individual air temp target (°C) |
-| 20498 | 0x5012 | 200 | A_CYC_CF_FAN_SPEED_UNIT | ❌ not read | Fan speed unit; 2 = percent (constant-flow regulation off) |
+| 20498 | 0x5012 | 200 | A_CYC_CF_FAN_SPEED_UNIT | ✅ read | CF base airflow unit: 0 = l/s, 1 = m³/h, 2 = %; gated with constant-flow support |
 | 20499 | 0x5013 | 201 | A_CYC_AWAY_RH_CTRL_ENABLED | ✅ read/write | Away RH control (verified) |
 | 20500 | 0x5014 | 202 | A_CYC_AWAY_CO2_CTRL_ENABLED | ✅ read/write | Away CO2 control |
 | 20501 | 0x5015 | 203 | A_CYC_AWAY_SPEED_SETTING | ✅ read | Away fan speed % |
@@ -459,7 +459,14 @@ gateway and mask, which is what confirms these offsets.
 > self-test registers (fans, bypass, heaters), and 0x5012 has no unit meaning. Only
 > 1.0.29 is verified to hold the constant-flow setpoints, so the block is read — and
 > its entities created — only from firmware 1.0.29 on, and only when the range marker
-> at buf 281 reads 16. Found by @lollo0296 in #7.
+> at buf 281 reads 16. Later firmware is assumed compatible, not independently verified.
+> Found by @lollo0296 in #7.
+
+The six base airflow numbers follow `A_CYC_CF_FAN_SPEED_UNIT` (0x5012, buf 200)
+on each refresh: 0 = l/s, 1 = m³/h, 2 = %. Unknown or unavailable codes have no
+unit label. Values, write payloads, limits and entity IDs are unchanged; no unit
+conversion is performed. On 1.0.9 this reserved word can be zero and must not be
+interpreted as l/s.
 
 | Reg | Hex | Buf | Name | Status | Notes |
 |---|---|---|---|---|---|

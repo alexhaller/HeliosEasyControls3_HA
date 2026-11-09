@@ -102,3 +102,30 @@ async def test_individual_mode_uses_configured_duration() -> None:
 
     sent = device._exchangeData.await_args.args[0]
     assert device._build_write_command((0x1204, 0), (0x1205, 15)) == sent
+
+
+@pytest.mark.parametrize("unit", [0, 1, 2, 255, 256, 65535])
+def test_constant_flow_unit_reads_full_word(unit: int) -> None:
+    data = bytearray(_frame())
+    data[400:402] = unit.to_bytes(2, "big")
+    assert _parsed(bytes(data)).cfFanSpeedUnit == unit
+
+
+@pytest.mark.parametrize(
+    "data",
+    [
+        _frame((1, 0, 9)),  # Reserved zero must not be interpreted as l/s.
+        _frame((1, 0, 28)),
+        _frame(()),  # Missing firmware version.
+        _frame(markers={**MARKERS, 281: 17}),
+    ],
+)
+def test_constant_flow_unit_cleared_when_unsupported(data: bytes) -> None:
+    device = _parsed(_frame())
+    assert device.cfFanSpeedUnit == 0
+    device._parseData(data)
+    assert device.cfFanSpeedUnit is None
+
+
+def test_constant_flow_unit_before_first_reply() -> None:
+    assert EasyControls3Instance(HOST).cfFanSpeedUnit is None

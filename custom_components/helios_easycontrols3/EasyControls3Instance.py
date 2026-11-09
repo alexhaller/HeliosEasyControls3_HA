@@ -90,6 +90,7 @@ _BUF_EXTRA_EXTR_FAN = 196
 _BUF_EXTRA_SUPP_FAN = 197
 _BUF_EXTRA_TIME = 198
 _BUF_INDIVIDUAL_AIR_TEMP = 199
+_BUF_CF_FAN_SPEED_UNIT = 200  # A_CYC_CF_FAN_SPEED_UNIT (0x5012), newer firmware only
 _BUF_RH_CTRL_AWAY = 201
 _BUF_CO2_CTRL_AWAY = 202
 _BUF_AWAY_SPEED = 203
@@ -324,6 +325,7 @@ class EasyControls3Instance:
         self._reportedUnknownDevice = False
         self._firmwareVersion: tuple[int, ...] | None = None
         self._cfSupported = False
+        self._cfFanSpeedUnit: int | None = None
         self._SerialNR: int | None = None
         self._instanceState: KWLState | None = None
         self._CurrentFanSpeed: int | None = None
@@ -657,6 +659,7 @@ class EasyControls3Instance:
         )
 
     def _parse_constant_flow(self, data: bytes) -> None:
+        self._cfFanSpeedUnit = None
         self._cfSupported = (
             _word(data, _BUF_CONSTANT_FLOW) == _CONSTANT_FLOW_RANGE_WORDS
             and self._firmwareVersion is not None
@@ -664,6 +667,7 @@ class EasyControls3Instance:
         )
         if not self._cfSupported:
             return
+        self._cfFanSpeedUnit = _word(data, _BUF_CF_FAN_SPEED_UNIT)
         self._cfBaseAirflow = {
             "away_supply": _word(data, _BUF_CF_AWAY_SUPPLY_AIRFLOW),
             "away_extract": _word(data, _BUF_CF_AWAY_EXTRACT_AIRFLOW),
@@ -1330,6 +1334,10 @@ class EasyControls3Instance:
     @property
     def postHeaterWinterSetpoint(self) -> float | None:
         return self._postHeaterWinterSetpoint
+
+    @property
+    def cfFanSpeedUnit(self) -> int | None:
+        return self._cfFanSpeedUnit
 
     def cfBaseAirflow(self, key: str) -> int | None:
         return self._cfBaseAirflow.get(key)
