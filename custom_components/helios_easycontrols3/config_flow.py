@@ -60,11 +60,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             try:
                 info = await validate_input(self.hass, user_input)
-                await self.async_set_unique_id(info["title"])
-                self._abort_if_unique_id_configured()
-                return self.async_create_entry(
-                    title=info["title"], data={"host": info["title"]}
-                )
             except CannotConnect:
                 errors["base"] = "cannot_connect"
             except InvalidHost:
@@ -72,6 +67,13 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             except Exception:
                 _LOGGER.exception("Unexpected exception")
                 errors["base"] = "unknown"
+            else:
+                # Outside the try: the abort is an exception, not an error
+                await self.async_set_unique_id(info["title"])
+                self._abort_if_unique_id_configured()
+                return self.async_create_entry(
+                    title=info["title"], data={"host": info["title"]}
+                )
 
         return self.async_show_form(
             step_id="user", data_schema=DATA_SCHEMA, errors=errors
