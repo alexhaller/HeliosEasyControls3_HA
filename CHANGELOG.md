@@ -1,3 +1,9 @@
+## [3.5.0](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v3.4.0...v3.5.0) (2026-11-10)
+
+### Features
+
+* make user-facing exceptions translatable ([598c511](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/598c511d5e5fc3776565162e57f19086d58e5f92))
+
 ## [3.4.0](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v3.3.0...v3.4.0) (2026-11-09)
 
 ### Features
