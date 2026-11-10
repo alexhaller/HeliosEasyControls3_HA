@@ -12,6 +12,7 @@ from websockets.exceptions import ConnectionClosedError
 from custom_components.helios_easycontrols3.EasyControls3Instance import (
     _WRITE_OK,
     EasyControls3Instance,
+    WriteRejected,
     _minutes_to_time,
 )
 from custom_components.helios_easycontrols3.KWLStates import KWLState
@@ -204,8 +205,9 @@ async def test_switch_to_unknown_duration_is_a_clean_error() -> None:
     data[246 * 2 : 246 * 2 + 2] = (1440).to_bytes(2, "big")
     device = _parsed(bytes(data))
     device._exchangeData = AsyncMock(return_value=_WRITE_OK)
-    with pytest.raises(HomeAssistantError, match="intensive duration"):
+    with pytest.raises(HomeAssistantError) as excinfo:
         await device.switchMode(KWLState.Intensive)
+    assert excinfo.value.translation_key == "intensive_duration_unknown"
     device._exchangeData.assert_not_awaited()
 
 
@@ -236,3 +238,14 @@ async def test_test_connection_does_not_swallow_bugs() -> None:
     device._exchangeData = AsyncMock(side_effect=ValueError("bug"))
     with pytest.raises(ValueError, match="bug"):
         await device.test_connection()
+
+
+async def test_unacknowledged_write_is_a_translated_error() -> None:
+    device = EasyControls3Instance(HOST)
+    with pytest.raises(WriteRejected) as excinfo:
+        device._check_write_response(b"\x00\x01", "mode switch")
+    assert excinfo.value.translation_key == "write_rejected"
+    assert excinfo.value.translation_placeholders == {
+        "context": "mode switch",
+        "response": "0001",
+    }

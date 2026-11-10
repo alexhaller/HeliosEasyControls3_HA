@@ -75,8 +75,9 @@ async def test_zero_percent_switches_the_unit_off() -> None:
 async def test_individual_mode_speed_is_not_a_single_value() -> None:
     _, fan = await _fan(KWLState.Individual)
 
-    with pytest.raises(ServiceValidationError):
+    with pytest.raises(ServiceValidationError) as excinfo:
         await fan.async_set_percentage(50)
+    assert excinfo.value.translation_key == "individual_fan_speed"
 
 
 async def test_preset_mode_switches_the_mode() -> None:

@@ -12,6 +12,7 @@ from . import (
     EasyControls3ConfigEntry,
     EasyControls3Coordinator,
 )
+from .const import DOMAIN
 from .KWLStates import KWLState
 
 PARALLEL_UPDATES = 1
@@ -100,7 +101,7 @@ class VentilationFan(EasyControls3BaseEntity, FanEntity):
         if mode is None or mode is KWLState.Individual:
             # Individual mode has separate supply and extract speeds
             raise ServiceValidationError(
-                "The fan speed of the Individual mode is set with the "
-                "Individual Supply/Extract Fan Speed numbers"
+                translation_domain=DOMAIN,
+                translation_key="individual_fan_speed",
             )
         await self._device.setFanSpeed(percentage, mode)

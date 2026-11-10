@@ -26,5 +26,25 @@
       "already_configured": "This device is already configured.",
       "reconfigure_successful": "The host was updated."
     }
+  },
+  "exceptions": {
+    "write_rejected": {
+      "message": "{context}: the device did not acknowledge the write (response {response})."
+    },
+    "device_timeout": {
+      "message": "The device at {url} did not reply within {timeout} s."
+    },
+    "intensive_duration_unknown": {
+      "message": "The intensive mode duration is not known yet. Wait for the next update and try again."
+    },
+    "individual_duration_unknown": {
+      "message": "The individual mode duration is not known yet. Wait for the next update and try again."
+    },
+    "individual_fan_speed": {
+      "message": "The fan speed of the Individual mode is set with the Individual Supply/Extract Fan Speed numbers."
+    },
+    "update_failed": {
+      "message": "Error communicating with the device: {error}"
+    }
   }
 }
