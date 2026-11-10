@@ -61,8 +61,9 @@ async def test_silent_unit_times_out(
 ) -> None:
     """Without a bound the read hangs forever; the 5 s guard fails the test then."""
     monkeypatch.setattr(module, "_EXCHANGE_TIMEOUT", 0.2, raising=False)
-    with pytest.raises(DeviceTimeout, match="no reply"):
+    with pytest.raises(DeviceTimeout) as excinfo:
         await asyncio.wait_for(silent_unit.readCurrentData(), 5)
+    assert excinfo.value.translation_key == "device_timeout"
 
 
 async def test_timeout_releases_the_lock(

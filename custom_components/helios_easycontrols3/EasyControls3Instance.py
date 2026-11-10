@@ -9,6 +9,7 @@ from homeassistant.exceptions import HomeAssistantError
 from websockets.asyncio.client import connect
 from websockets.exceptions import WebSocketException
 
+from .const import DOMAIN
 from .deviceList import deviceInfo, extraDeviceTypes
 from .KWLStates import CellState, KWLState
 
@@ -485,8 +486,12 @@ class EasyControls3Instance:
     def _check_write_response(self, response: bytes, context: str) -> None:
         if response != _WRITE_OK:
             raise WriteRejected(
-                f"{context}: device did not acknowledge the write "
-                f"(response {response.hex()})"
+                translation_domain=DOMAIN,
+                translation_key="write_rejected",
+                translation_placeholders={
+                    "context": context,
+                    "response": response.hex(),
+                },
             )
         LOGGER.debug("%s: write acknowledged", context)
 
@@ -506,7 +511,12 @@ class EasyControls3Instance:
                     return response
             except TimeoutError as err:
                 raise DeviceTimeout(
-                    f"no reply from {self._url} within {_EXCHANGE_TIMEOUT} s"
+                    translation_domain=DOMAIN,
+                    translation_key="device_timeout",
+                    translation_placeholders={
+                        "url": self._url,
+                        "timeout": str(_EXCHANGE_TIMEOUT),
+                    },
                 ) from err
 
     # ---------------------------------------------------------------------------
@@ -758,14 +768,20 @@ class EasyControls3Instance:
             )
         elif wantedKWLState is KWLState.Intensive:
             if self._intensivDuration is None:
-                raise HomeAssistantError("intensive duration not known yet")
+                raise HomeAssistantError(
+                    translation_domain=DOMAIN,
+                    translation_key="intensive_duration_unknown",
+                )
             duration = self._intensivDuration.hour * 60 + self._intensivDuration.minute
             cmd = self._build_write_command(
                 (_REG_BOOST_TIMER, duration), (_REG_INDIVIDUAL_TIMER, 0)
             )
         elif wantedKWLState is KWLState.Individual:
             if self._individualModeDuration is None:
-                raise HomeAssistantError("individual duration not known yet")
+                raise HomeAssistantError(
+                    translation_domain=DOMAIN,
+                    translation_key="individual_duration_unknown",
+                )
             duration = (
                 self._individualModeDuration.hour * 60
                 + self._individualModeDuration.minute

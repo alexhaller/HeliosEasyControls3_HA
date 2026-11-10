@@ -129,7 +129,11 @@ async def async_setup_entry(
         try:
             await device.readCurrentData()
         except Exception as err:
-            raise UpdateFailed(f"Error communicating with device: {err}") from err
+            raise UpdateFailed(
+                translation_domain=DOMAIN,
+                translation_key="update_failed",
+                translation_placeholders={"error": str(err)},
+            ) from err
         return device
 
     coordinator: EasyControls3Coordinator = DataUpdateCoordinator(
