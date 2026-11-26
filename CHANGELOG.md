@@ -1,3 +1,9 @@
+## [3.5.1](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v3.5.0...v3.5.1) (2026-11-26)
+
+### Bug Fixes
+
+* ship the brand icon at the sizes hassfest accepts ([0d24588](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/0d24588959cdc0d6fbd3cd9db775ac79614637c0))
+
 ## [3.5.0](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v3.4.0...v3.5.0) (2026-11-10)
 
 ### Features
