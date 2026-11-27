@@ -102,3 +102,15 @@ async def test_text_frame_reads_as_cannot_connect(
 
 async def test_answering_unit_is_unaffected(acking_unit: EasyControls3Instance) -> None:
     assert await acking_unit._exchangeData(b"\x00") == _WRITE_OK
+
+
+@pytest.mark.parametrize(
+    ("host", "url"),
+    [
+        ("192.168.1.10", "ws://192.168.1.10:80"),
+        ("helios", "ws://helios:80"),
+        ("fd00::1", "ws://[fd00::1]:80"),
+    ],
+)
+def test_url_of_host(host: str, url: str) -> None:
+    assert EasyControls3Instance(host).url == url

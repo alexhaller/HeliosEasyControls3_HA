@@ -337,7 +337,9 @@ def _find_extended_start(data: bytes) -> int | None:
 class EasyControls3Instance:
     def __init__(self, url: str) -> None:
         self._lock = asyncio.Lock()
-        self._url: str = "ws://" + url + ":80"
+        # An IPv6 address needs brackets in a URL
+        host = f"[{url}]" if ":" in url else url
+        self._url: str = f"ws://{host}:80"
         self._deviceModel: str | None = None
         self._deviceType: str | None = None
         self._reportedUnknownDevice = False
