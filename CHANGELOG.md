@@ -1,3 +1,9 @@
+## [3.5.3](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v3.5.2...v3.5.3) (2026-11-27)
+
+### Bug Fixes
+
+* put brackets around an IPv6 address in the WebSocket URL ([68fecdb](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/68fecdbfebd64d1445628e0cfc8bd736dc071c93))
+
 ## [3.5.2](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v3.5.1...v3.5.2) (2026-11-27)
 
 ### Bug Fixes
