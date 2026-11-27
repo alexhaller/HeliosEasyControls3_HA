@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-import pytest
 from homeassistant.config_entries import SOURCE_IGNORE, SOURCE_USER
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
@@ -205,16 +204,16 @@ async def test_reconfigure_cannot_connect(hass: HomeAssistant) -> None:
     assert entry.data == {"host": HOST}
 
 
-@pytest.mark.parametrize("host", ["not a host!", "-bad"])
-async def test_reconfigure_invalid_host(hass: HomeAssistant, host: str) -> None:
+async def test_reconfigure_to_a_hostname_without_a_dot(hass: HomeAssistant) -> None:
     entry = _add_entry(hass)
     result = await _start(hass, "reconfigure", entry)
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"host": host}
-    )
+    with _unit():
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {"host": "helios"}
+        )
 
-    assert result["errors"] == {"host": "invalid_host"}
-    assert entry.data == {"host": HOST}
+    assert result["reason"] == "reconfigure_successful"
+    assert entry.data == {"host": "helios"}
 
 
 async def test_reconfigure_host_of_other_entry(hass: HomeAssistant) -> None:

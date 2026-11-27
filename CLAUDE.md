@@ -71,4 +71,4 @@ downgrade that back to a log line.
   `LEGACY_DOMAIN` - devices and entities move to the new entry with their entity IDs intact. Keep that
   migration until no user can still be on a v2 install.
 - **pip-audit** domain for this project is `helios_easycontrols3`; `requirements` is empty: `websockets` is bundled by HA core, and the filter due date uses the stdlib `datetime.timedelta`, so `python-dateutil` (once listed for `relativedelta(days=...)`) is no longer needed.
-- **Brand assets**: `custom_components/helios_easycontrols3/brand/icon.png` (256×256), `brand/icon@2x.png` (512×512) and `brands/icon.png` (512×512), Helios red #C62828.
+- **Brand assets**: `custom_components/helios_easycontrols3/brand/icon.png` (256×256) and `brand/icon@2x.png` (512×512), Helios red #C62828.

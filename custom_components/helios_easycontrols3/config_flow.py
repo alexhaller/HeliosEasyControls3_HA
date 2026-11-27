@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import re
 from typing import Any
 
 import probatio
@@ -19,29 +18,10 @@ _LOGGER = logging.getLogger(__name__)
 
 DATA_SCHEMA = probatio.Schema({"host": str})
 
-# Accepts IPv4 addresses (each octet 0-255) or valid hostnames (e.g. helios.local, 192.168.1.10)
-_OCTET = r"(25[0-5]|2[0-4]\d|1\d{2}|[1-9]\d|\d)"
-_HOST_RE = re.compile(
-    r"^("
-    + _OCTET
-    + r"\."
-    + _OCTET
-    + r"\."
-    + _OCTET
-    + r"\."
-    + _OCTET  # IPv4
-    + r"|"
-    + r"([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?"  # hostname
-    + r")$"
-)
-
 
 async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any]:
     """Validate the user input allows us to connect."""
     host = data["host"].strip().lower()
-    if not _HOST_RE.match(host):
-        raise InvalidHost
-
     easyControlsInstance = EasyControls3Instance(host)
     result = await easyControlsInstance.test_connection()
     if not result:
@@ -65,8 +45,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 info = await validate_input(self.hass, user_input)
             except CannotConnect:
                 errors["base"] = "cannot_connect"
-            except InvalidHost:
-                errors["host"] = "invalid_host"
             except Exception:
                 _LOGGER.exception("Unexpected exception")
                 errors["base"] = "unknown"
@@ -99,8 +77,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 info = await validate_input(self.hass, user_input)
             except CannotConnect:
                 errors["base"] = "cannot_connect"
-            except InvalidHost:
-                errors["host"] = "invalid_host"
             except Exception:
                 _LOGGER.exception("Unexpected exception")
                 errors["base"] = "unknown"
@@ -159,7 +135,3 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
 class CannotConnect(exceptions.HomeAssistantError):
     """Error to indicate we cannot connect."""
-
-
-class InvalidHost(exceptions.HomeAssistantError):
-    """Error to indicate there is an invalid hostname."""
