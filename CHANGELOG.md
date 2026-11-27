@@ -1,3 +1,9 @@
+## [3.5.2](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v3.5.1...v3.5.2) (2026-11-27)
+
+### Bug Fixes
+
+* accept any host that connects in the config flow ([ed9af14](https://github.com/alexhaller/HeliosEasyControls3_HA/commit/ed9af14dd6aff4dda049fd3babf3f7dae61d8769))
+
 ## [3.5.1](https://github.com/alexhaller/HeliosEasyControls3_HA/compare/v3.5.0...v3.5.1) (2026-11-26)
 
 ### Bug Fixes
